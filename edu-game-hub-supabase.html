@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คลังเกมการศึกษาอ้างอิงหลักสูตรแกนกลาง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#F8F9FA; --surface:#FFFFFF; --line:#E7E9EC; --ink:#1F2430; --ink-soft:#6B7280;
+    --thai:#E4536B;    --thai-tint:#FCE9EC;
+    --math:#F0883E;    --math-tint:#FDEEE1;
+    --sci:#2FA66C;     --sci-tint:#E5F5EC;
+    --soc:#A9754A;     --soc-tint:#F3EAE1;
+    --pe:#1FA5C8;      --pe-tint:#E3F4F8;
+    --art:#B357C4;     --art-tint:#F5E9F7;
+    --career:#C99A2E;  --career-tint:#FAF2DE;
+    --lang:#3A6FB0;    --lang-tint:#E7EEF6;
+    --brand:#3E5CE0; --brand-dark:#2C40A8; --danger:#D9455F; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:'Kanit',sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,h4{ font-family:'Kanit',sans-serif; margin:0; }
+  p{ margin:0; } a{ color:inherit; } button{ font-family:'Kanit',sans-serif; }
+
+  .navbar{ position:sticky; top:0; z-index:50; background:rgba(255,255,255,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
+  .nav-inner{ max-width:1320px; margin:0 auto; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .logo{ display:flex; align-items:center; gap:10px; cursor:pointer; }
+  .logo-mark{ width:34px; height:34px; border-radius:9px; display:grid; grid-template-columns:repeat(4,1fr); gap:2px; padding:5px; background:var(--surface); border:1px solid var(--line); flex:none; }
+  .logo-mark span{ border-radius:2px; }
+  .logo-text{ font-weight:700; font-size:1.05rem; line-height:1.15; }
+  .logo-text small{ display:block; font-weight:400; font-size:.68rem; color:var(--ink-soft); }
+  .nav-links{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  .nav-links button{ all:unset; cursor:pointer; padding:9px 14px; border-radius:9px; font-size:.92rem; font-weight:500; color:var(--ink-soft); position:relative; }
+  .nav-links button:hover{ background:#F0F1F5; color:var(--ink); }
+  .nav-links button.active{ background:var(--brand); color:#fff; font-weight:600; }
+  .nav-badge{ position:absolute; top:2px; right:2px; background:var(--danger); color:#fff; font-size:.62rem; font-weight:700; min-width:16px; height:16px; border-radius:9px; display:flex; align-items:center; justify-content:center; padding:0 3px; }
+  .auth-area{ display:flex; align-items:center; gap:10px; }
+  .signin-btn{ all:unset; cursor:pointer; display:flex; align-items:center; gap:8px; border:1px solid var(--line); background:#fff; padding:7px 14px 7px 7px; border-radius:20px; font-size:.85rem; font-weight:600; color:var(--ink); }
+  .signin-btn:hover{ background:#F8F9FA; }
+  .signin-btn .g-icon{ width:20px; height:20px; }
+  .admin-pill{ display:none; align-items:center; gap:8px; background:#EAF6EE; border:1px solid #BEE6CB; color:#1F7A47; font-size:.8rem; font-weight:600; padding:6px 12px; border-radius:20px; }
+  .admin-pill img{ width:20px; height:20px; border-radius:50%; }
+  .signout-btn{ all:unset; cursor:pointer; font-size:.76rem; font-weight:600; color:var(--danger); text-decoration:underline; }
+  body.is-admin .admin-pill{ display:flex; }
+  body.is-admin #signInBtn{ display:none; }
+  .admin-only{ display:none; }
+  body.is-admin .admin-only{ display:inherit; }
+  body.is-admin .admin-only-flex{ display:none; }
+  body.is-admin .admin-only-flex.admin-only{ display:flex; }
+
+  main{ max-width:1320px; margin:0 auto; padding:0 24px 80px; }
+  .page{ display:none; animation:fadeUp .35s ease; }
+  .page.active{ display:block; }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  .sync-banner{ display:none; align-items:center; gap:10px; background:#FFF3D6; color:#8A6300; border:1px solid #F3D98B; border-radius:10px; padding:10px 16px; font-size:.82rem; margin:18px 0; line-height:1.7; }
+  .sync-banner.show{ display:flex; } .sync-banner.ok{ background:#E5F5EC; color:#1F7A47; border-color:#B9E3CB; }
+  .sync-banner button{ all:unset; cursor:pointer; font-weight:700; text-decoration:underline; }
+
+  .hero{ padding:44px 0 30px; display:grid; grid-template-columns:1.1fr .9fr; gap:40px; align-items:center; }
+  .eyebrow{ display:inline-block; font-size:.78rem; font-weight:600; letter-spacing:.03em; color:var(--brand); background:#EAEDFC; padding:6px 12px; border-radius:20px; margin-bottom:16px; }
+  .hero h1{ font-size:clamp(2rem,4vw,2.9rem); font-weight:700; line-height:1.25; margin-bottom:14px; }
+  .hero h1 span{ color:var(--brand); }
+  .hero p.lede{ color:var(--ink-soft); font-size:1.02rem; line-height:1.8; max-width:520px; margin-bottom:24px; }
+  .searchbar{ display:flex; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:6px; box-shadow:0 10px 24px -18px rgba(31,36,48,.4); max-width:520px; }
+  .searchbar input{ flex:1; border:none; outline:none; background:transparent; padding:10px 12px; font-family:'Kanit'; font-size:.95rem; }
+  .searchbar button{ all:unset; cursor:pointer; background:var(--brand); color:#fff; font-weight:600; font-size:.9rem; padding:11px 20px; border-radius:9px; display:flex; align-items:center; gap:6px; }
+  .hero-stats{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  .stat-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px; }
+  .stat-card .num{ font-size:1.9rem; font-weight:700; color:var(--brand); }
+  .stat-card .lab{ font-size:.82rem; color:var(--ink-soft); margin-top:4px; }
+
+  section.block{ padding:34px 0; }
+  .block-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:8px; }
+  .block-head h2{ font-size:1.35rem; font-weight:700; }
+  .block-head .see-all{ font-size:.85rem; font-weight:600; color:var(--brand); cursor:pointer; background:none; border:none; }
+
+  .rail{ display:grid; grid-auto-flow:column; grid-auto-columns:270px; gap:16px; overflow-x:auto; padding-bottom:8px; }
+  .rail-empty{ color:var(--ink-soft); font-size:.88rem; padding:20px 0; }
+  .subject-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .subject-tile{ all:unset; cursor:pointer; display:flex; flex-direction:column; gap:10px; background:var(--tint,#eee); border-radius:var(--radius); padding:18px; border:1px solid var(--line); }
+  .subject-tile .icon{ width:38px; height:38px; border-radius:10px; background:var(--c,#999); display:flex; align-items:center; justify-content:center; }
+  .subject-tile .icon svg{ width:20px; height:20px; }
+  .subject-tile .name{ font-weight:600; font-size:.92rem; }
+  .subject-tile .count{ font-size:.76rem; color:var(--ink-soft); }
+
+  .card{ position:relative; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; display:flex; flex-direction:column; transition:transform .15s ease, box-shadow .15s ease; cursor:pointer; }
+  .card:hover{ transform:translateY(-4px); box-shadow:0 16px 30px -20px rgba(31,36,48,.35); }
+  .card-cover{ height:120px; background:var(--tint,#eee); display:flex; align-items:center; justify-content:center; position:relative; }
+  .card-cover .icon{ width:44px; height:44px; border-radius:12px; background:var(--c,#999); display:flex; align-items:center; justify-content:center; }
+  .card-cover .icon svg{ width:24px; height:24px; }
+  .badges{ position:absolute; top:10px; left:10px; display:flex; gap:6px; }
+  .badge{ font-size:.68rem; font-weight:600; padding:4px 9px; border-radius:20px; background:rgba(255,255,255,.9); color:var(--c,#333); }
+  .badge-pending{ position:absolute; top:10px; right:10px; font-size:.66rem; font-weight:700; padding:4px 9px; border-radius:20px; background:#FFF3D6; color:#9A6B00; }
+  .card-actions{ position:absolute; bottom:8px; right:8px; display:none; gap:6px; z-index:2; }
+  body.is-admin .card-actions{ display:flex; }
+  .icon-btn{ all:unset; cursor:pointer; width:26px; height:26px; border-radius:7px; background:rgba(255,255,255,.95); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.15); }
+  .icon-btn svg{ width:13px; height:13px; stroke:var(--ink-soft); fill:none; stroke-width:2.2; }
+  .icon-btn.danger:hover svg{ stroke:var(--danger); } .icon-btn.edit:hover svg{ stroke:var(--brand); }
+  .card-body{ padding:16px; display:flex; flex-direction:column; gap:8px; flex:1; }
+  .card-body h3{ font-size:1rem; font-weight:600; line-height:1.4; }
+  .card-body .desc{ font-size:.83rem; color:var(--ink-soft); line-height:1.6; flex:1; }
+  .card-meta{ display:flex; align-items:center; justify-content:space-between; font-size:.72rem; color:var(--ink-soft); }
+  .card-meta .code{ font-weight:600; color:var(--c,#333); background:var(--tint,#eee); padding:2px 8px; border-radius:6px; }
+  .card-foot{ display:flex; gap:8px; padding:0 16px 16px; }
+  .btn{ all:unset; cursor:pointer; text-align:center; font-size:.85rem; font-weight:600; padding:9px 12px; border-radius:9px; flex:1; }
+  .btn-primary{ background:var(--c,var(--brand)); color:#fff; } .btn-primary:hover{ filter:brightness(1.06); }
+  .btn-ghost{ background:#F0F1F5; color:var(--ink); } .btn-ghost:hover{ background:#E7E9EC; }
+
+  .library-layout{ display:grid; grid-template-columns:250px 1fr; gap:28px; padding-top:14px; }
+  .filters{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px; align-self:start; position:sticky; top:84px; display:flex; flex-direction:column; gap:18px; }
+  .filters h4{ font-size:.9rem; font-weight:700; }
+  .filter-group label{ display:block; font-size:.78rem; color:var(--ink-soft); margin-bottom:6px; font-weight:500; }
+  .filter-group select, .filter-group input{ width:100%; padding:9px 10px; border-radius:8px; border:1px solid var(--line); font-family:'Kanit'; font-size:.87rem; background:var(--bg); color:var(--ink); }
+  .clear-btn{ all:unset; cursor:pointer; width:100%; text-align:center; font-size:.82rem; font-weight:600; color:var(--brand); padding:9px; border:1px dashed var(--brand); border-radius:8px; }
+  .admin-link{ all:unset; cursor:pointer; display:block; text-align:center; font-size:.78rem; font-weight:600; color:var(--ink-soft); padding:8px; border-radius:8px; background:#F0F1F5; }
+  .admin-link:hover{ background:#E7E9EC; }
+
+  .library-results-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .library-results-head .count{ font-size:.9rem; color:var(--ink-soft); }
+  .chip-row{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chip{ font-size:.78rem; padding:6px 11px; border-radius:20px; border:1px solid var(--line); cursor:pointer; background:var(--surface); color:var(--ink-soft); }
+  .chip.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .add-game-btn{ all:unset; cursor:pointer; font-size:.85rem; font-weight:700; padding:9px 16px; border-radius:9px; background:var(--brand); color:#fff; }
+  .lib-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px; }
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--ink-soft); } .empty-state .big{ font-size:2.4rem; margin-bottom:10px; }
+  .loading-state{ text-align:center; padding:60px 20px; color:var(--ink-soft); font-size:.9rem; }
+
+  .modal-overlay{ position:fixed; inset:0; background:rgba(20,22,30,.55); backdrop-filter:blur(2px); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
+  .modal-overlay.active{ display:flex; }
+  .modal{ background:var(--surface); border-radius:18px; max-width:640px; width:100%; max-height:88vh; overflow-y:auto; position:relative; }
+  .modal-cover{ height:110px; display:flex; align-items:center; padding:0 26px; gap:14px; }
+  .modal-cover .icon{ width:52px; height:52px; border-radius:14px; background:#fff; display:flex; align-items:center; justify-content:center; }
+  .modal-cover .icon svg{ width:28px; height:28px; }
+  .modal-cover .titles{ color:#fff; } .modal-cover .titles .sub{ font-size:.78rem; opacity:.9; } .modal-cover .titles h2{ font-size:1.25rem; font-weight:700; }
+  .modal-close{ all:unset; cursor:pointer; position:absolute; top:16px; right:20px; width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.1rem; z-index:3; }
+  .modal-body{ padding:24px 26px 28px; display:flex; flex-direction:column; gap:20px; }
+  .modal-body .desc{ font-size:.92rem; line-height:1.8; color:var(--ink-soft); }
+  .info-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .info-item{ background:var(--bg); border-radius:10px; padding:12px 14px; } .info-item .lab{ font-size:.72rem; color:var(--ink-soft); margin-bottom:4px; } .info-item .val{ font-size:.88rem; font-weight:600; }
+  .comp-tags{ display:flex; flex-wrap:wrap; gap:6px; } .comp-tag{ font-size:.74rem; background:var(--tint,#eee); color:var(--c,#333); padding:5px 10px; border-radius:20px; font-weight:500; }
+  .cite-box{ background:var(--bg); border:1px dashed var(--line); border-radius:10px; padding:14px; font-family:'Kanit'; font-size:.83rem; color:var(--ink-soft); line-height:1.7; }
+  .cite-actions{ display:flex; justify-content:flex-end; margin-top:8px; }
+  .copy-btn{ all:unset; cursor:pointer; font-size:.78rem; font-weight:600; color:var(--brand); background:#EAEDFC; padding:6px 12px; border-radius:8px; }
+  .copy-btn.copied{ background:#DFF5E5; color:#1F9D4F; }
+  .modal-play{ display:block; text-align:center; padding:13px; border-radius:10px; background:var(--c,var(--brand)); color:#fff; font-weight:700; text-decoration:none; font-size:.95rem; }
+
+  .form-head{ padding:22px 26px 0; } .form-head h2{ font-size:1.2rem; font-weight:700; }
+  .field{ margin-bottom:16px; } .field label{ display:block; font-size:.85rem; font-weight:600; margin-bottom:7px; } .field .hint{ font-size:.74rem; color:var(--ink-soft); margin-top:5px; }
+  .field input, .field select, .field textarea{ width:100%; padding:11px 13px; border-radius:9px; border:1px solid var(--line); font-family:'Kanit'; font-size:.9rem; background:var(--bg); color:var(--ink); outline:none; }
+  .field input:focus, .field select:focus, .field textarea:focus{ border-color:var(--brand); }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .checkbox-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .checkbox-chip{ display:flex; align-items:center; gap:6px; font-size:.8rem; background:var(--bg); border:1px solid var(--line); padding:7px 11px; border-radius:20px; cursor:pointer; }
+  .checkbox-chip input{ width:auto; }
+  .toggle-row{ display:flex; gap:18px; } .toggle-row label{ display:flex; align-items:center; gap:7px; font-size:.85rem; font-weight:500; cursor:pointer; }
+  .form-actions{ display:flex; gap:10px; padding:6px 26px 26px; } .form-actions .submit-btn{ flex:1; } .form-actions .delete-link{ all:unset; cursor:pointer; color:var(--danger); font-size:.85rem; font-weight:600; padding:13px 16px; }
+  .submit-btn{ all:unset; cursor:pointer; display:block; width:100%; text-align:center; background:var(--brand); color:#fff; font-weight:700; font-size:.95rem; padding:13px; border-radius:10px; }
+  .submit-btn:hover{ background:var(--brand-dark); }
+  .submit-btn[disabled]{ opacity:.6; cursor:wait; }
+  .toast{ display:none; align-items:center; gap:10px; background:#DFF5E5; color:#1F9D4F; padding:12px 16px; border-radius:10px; font-size:.85rem; font-weight:600; margin-top:16px; }
+  .toast.show{ display:flex; } .toast.error{ background:#FCE9EC; color:var(--danger); }
+
+  .tabs-row{ display:flex; gap:8px; margin:26px 0 20px; flex-wrap:wrap; }
+  .tab-btn{ all:unset; cursor:pointer; padding:10px 18px; border-radius:9px; font-size:.9rem; font-weight:600; background:var(--surface); border:1px solid var(--line); color:var(--ink-soft); }
+  .tab-btn.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .res-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
+  .res-item{ display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .res-icon{ width:40px; height:40px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; } .res-icon svg{ width:20px; height:20px; }
+  .res-info{ flex:1; min-width:0; } .res-info .name{ font-weight:600; font-size:.92rem; } .res-info .meta{ font-size:.76rem; color:var(--ink-soft); margin-top:2px; }
+  .res-download{ all:unset; cursor:pointer; font-size:.82rem; font-weight:600; padding:8px 14px; border-radius:8px; background:#F0F1F5; color:var(--ink); flex:none; }
+  .res-del{ all:unset; cursor:pointer; width:30px; height:30px; border-radius:8px; display:none; align-items:center; justify-content:center; flex:none; }
+  body.is-admin .res-del{ display:flex; }
+  .res-del svg{ width:14px; height:14px; stroke:var(--ink-soft); fill:none; stroke-width:2.2; } .res-del:hover svg{ stroke:var(--danger); }
+  .status-empty{ text-align:center; padding:30px; color:var(--ink-soft); font-size:.85rem; }
+  .res-add-card{ background:var(--surface); border:1px dashed var(--line); border-radius:12px; padding:16px; margin-bottom:20px; }
+  .res-add-card h4{ font-size:.88rem; font-weight:700; margin-bottom:12px; }
+  .res-add-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1.4fr auto; gap:10px; align-items:end; }
+  .res-add-grid .field{ margin-bottom:0; } .res-add-grid label{ font-size:.72rem; color:var(--ink-soft); margin-bottom:4px; display:block; font-weight:500; }
+  .res-add-grid input, .res-add-grid select{ width:100%; padding:9px 10px; border-radius:8px; border:1px solid var(--line); font-family:'Kanit'; font-size:.85rem; background:var(--bg); }
+  .res-add-btn{ all:unset; cursor:pointer; background:var(--brand); color:#fff; font-weight:600; font-size:.85rem; padding:10px 16px; border-radius:8px; text-align:center; white-space:nowrap; }
+
+  .form-card{ max-width:640px; margin:26px auto 0; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:30px; }
+  .status-list{ max-width:680px; margin:22px auto 0; display:flex; flex-direction:column; gap:8px; }
+  .status-row{ display:flex; justify-content:space-between; align-items:center; background:var(--surface); border:1px solid var(--line); padding:12px 16px; border-radius:10px; font-size:.85rem; gap:10px; }
+  .status-row .name{ flex:1; min-width:0; }
+  .status-row .actions{ display:flex; gap:6px; align-items:center; }
+  .pill{ font-size:.72rem; font-weight:600; padding:3px 10px; border-radius:20px; white-space:nowrap; }
+  .pill-pending{ background:#FFF3D6; color:#9A6B00; } .pill-approved{ background:#DFF5E5; color:#1F9D4F; }
+  .mini-action{ all:unset; cursor:pointer; font-size:.76rem; font-weight:600; padding:6px 10px; border-radius:7px; }
+  .mini-action.approve{ background:#DFF5E5; color:#1F9D4F; } .mini-action.remove{ background:#FCE9EC; color:var(--danger); }
+
+  .about-hero{ padding:36px 0 10px; max-width:720px; } .about-hero h1{ font-size:2rem; font-weight:700; margin-bottom:14px; } .about-hero p{ color:var(--ink-soft); line-height:1.9; font-size:.95rem; }
+  .about-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:30px 0; }
+  .about-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px; }
+  .about-card .icon{ width:38px; height:38px; border-radius:10px; background:var(--brand); display:flex; align-items:center; justify-content:center; margin-bottom:12px; } .about-card .icon svg{ width:20px; height:20px; }
+  .about-card h4{ font-size:.95rem; font-weight:600; margin-bottom:6px; } .about-card p{ font-size:.82rem; color:var(--ink-soft); line-height:1.7; }
+  .contact-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:26px; max-width:480px; }
+  .contact-row{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); font-size:.88rem; } .contact-row:last-child{ border-bottom:none; }
+  .contact-row .ic{ width:34px; height:34px; border-radius:9px; background:var(--bg); display:flex; align-items:center; justify-content:center; flex:none; } .contact-row .ic svg{ width:17px; height:17px; }
+
+  footer{ border-top:1px solid var(--line); margin-top:40px; padding:26px 24px; text-align:center; color:var(--ink-soft); font-size:.8rem; }
+
+  @media (max-width:900px){
+    .hero{ grid-template-columns:1fr; }
+    .subject-grid{ grid-template-columns:repeat(2,1fr); }
+    .library-layout{ grid-template-columns:1fr; } .filters{ position:static; }
+    .info-grid{ grid-template-columns:1fr; } .about-grid{ grid-template-columns:1fr; }
+    .field-row{ grid-template-columns:1fr; } .res-add-grid{ grid-template-columns:1fr; }
+    .nav-links button:not(.auth-area *){ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ======================================================================
+  ตั้งค่า 3 บรรทัดนี้ให้เป็นของคุณเอง (ดูวิธีทำใน SETUP_GUIDE_SUPABASE.txt)
+======================================================================= -->
+<script>
+  const SUPABASE_URL      = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";   // เช่น https://xxxxx.supabase.co
+  const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
+  const ADMIN_LINK_URL    = "PASTE_YOUR_SUPABASE_TABLE_EDITOR_URL_HERE"; // ปุ่มลัดเปิด Table Editor
+</script>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="logo" data-nav="home">
+      <div class="logo-mark">
+        <span style="background:var(--thai)"></span><span style="background:var(--math)"></span>
+        <span style="background:var(--sci)"></span><span style="background:var(--soc)"></span>
+        <span style="background:var(--pe)"></span><span style="background:var(--art)"></span>
+        <span style="background:var(--career)"></span><span style="background:var(--lang)"></span>
+      </div>
+      <div class="logo-text">คลังเกมการศึกษา<small>อ้างอิงหลักสูตรแกนกลาง</small></div>
+    </div>
+    <div class="nav-links">
+      <button data-nav="home">หน้าแรก</button>
+      <button data-nav="library">คลังเกม</button>
+      <button data-nav="resources">คลังสื่อ &amp; แผนการสอน</button>
+      <button data-nav="submit">ส่ง/แนะนำเกม <span class="nav-badge admin-only" id="pendingBadge" style="display:none;">0</span></button>
+      <button data-nav="about">เกี่ยวกับเรา</button>
+      <div class="auth-area">
+        <button class="signin-btn" id="signInBtn">
+          <svg class="g-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4C29.6 36.3 27 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 40.6 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.6 5.4C41.5 36 45 30.5 45 24c0-1.4-.1-2.7-1.4-3.5z"/></svg>
+          เข้าสู่ระบบแอดมิน
+        </button>
+        <div class="admin-pill" id="adminPill">
+          <img id="adminPicture" src="" alt="">
+          <span id="adminName">แอดมิน</span>
+          <button class="signout-btn" id="signOutBtn">ออกจากระบบ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ================= HOME ================= -->
+  <section class="page" id="page-home">
+    <div class="sync-banner" id="syncBanner"></div>
+    <div class="hero">
+      <div>
+        <span class="eyebrow">อ้างอิงหลักสูตรแกนกลางการศึกษาขั้นพื้นฐาน</span>
+        <h1>ค้นเกมให้ตรงตัวชี้วัด<br>ใน <span>คลิกเดียว</span></h1>
+        <p class="lede">ศูนย์รวมเกมการศึกษาออนไลน์ จัดหมวดตาม 8 กลุ่มสาระการเรียนรู้ พร้อมรหัสตัวชี้วัดและข้อความอ้างอิงที่คัดลอกไปใส่แผนการสอนได้ทันที ข้อมูลเก็บบน Supabase (ฐานข้อมูลจริง) แอดมินล็อกอินด้วยบัญชี Google เพื่อแก้ไขข้อมูลผ่านเว็บได้แบบเรียลไทม์</p>
+        <div class="searchbar">
+          <input id="heroSearch" type="text" placeholder="ค้นหาชื่อเกม เช่น &quot;เศษส่วน&quot; หรือรหัสตัวชี้วัด เช่น &quot;ค 1.1 ป.4&quot;">
+          <button id="heroSearchBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            ค้นหา
+          </button>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-card"><div class="num">8</div><div class="lab">กลุ่มสาระการเรียนรู้</div></div>
+        <div class="stat-card"><div class="num">4</div><div class="lab">ช่วงชั้น อนุบาล–มัธยม</div></div>
+        <div class="stat-card"><div class="num" id="statGames">–</div><div class="lab">เกมที่เผยแพร่แล้ว</div></div>
+        <div class="stat-card"><div class="num" id="statPending">–</div><div class="lab">รอตรวจสอบ (แอดมินเท่านั้น)</div></div>
+      </div>
+    </div>
+
+    <section class="block">
+      <div class="block-head"><h2>🔥 เกมยอดนิยม</h2><button class="see-all" data-nav="library">ดูทั้งหมด →</button></div>
+      <div class="rail" id="railPopular"><div class="loading-state">กำลังโหลดข้อมูล...</div></div>
+    </section>
+    <section class="block">
+      <div class="block-head"><h2>✨ เกมมาใหม่</h2><button class="see-all" data-nav="library">ดูทั้งหมด →</button></div>
+      <div class="rail" id="railNew"></div>
+    </section>
+    <section class="block">
+      <div class="block-head"><h2>เลือกตามกลุ่มสาระการเรียนรู้</h2></div>
+      <div class="subject-grid" id="subjectGrid"></div>
+    </section>
+  </section>
+
+  <!-- ================= LIBRARY ================= -->
+  <section class="page" id="page-library">
+    <div class="library-layout">
+      <aside class="filters">
+        <h4>ตัวกรอง</h4>
+        <div class="filter-group"><label>กลุ่มสาระการเรียนรู้</label><select id="fSubject"><option value="">ทั้งหมด</option></select></div>
+        <div class="filter-group"><label>ระดับชั้น</label><select id="fLevel"><option value="">ทั้งหมด</option></select></div>
+        <div class="filter-group"><label>แพลตฟอร์ม</label><select id="fPlatform"><option value="">ทั้งหมด</option></select></div>
+        <div class="filter-group"><label>ค้นหาคำสำคัญ / รหัสตัวชี้วัด</label><input type="text" id="fSearch" placeholder="เช่น เศษส่วน, ท 1.1"></div>
+        <button class="clear-btn" id="clearFilters">ล้างตัวกรอง</button>
+        <button class="admin-link" id="refreshBtn">↻ ดึงข้อมูลล่าสุด</button>
+        <a class="admin-link admin-only" href="#" id="sheetEditLink" target="_blank" rel="noopener noreferrer">📝 เปิด Supabase Table Editor</a>
+      </aside>
+      <div>
+        <div class="library-results-head">
+          <span class="count" id="resultCount"></span>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <div class="chip-row" id="sortChips">
+              <span class="chip active" data-sort="popular">ความนิยม</span>
+              <span class="chip" data-sort="new">ใหม่ล่าสุด</span>
+              <span class="chip" data-sort="name">ชื่อ ก-ฮ</span>
+            </div>
+            <button class="add-game-btn" id="openAddGameBtn" style="display:none;">+ เพิ่มเกมใหม่</button>
+            <button class="add-game-btn admin-only-flex" data-nav="submit" style="background:#F0F1F5;color:var(--ink);">แนะนำเกม (สาธารณะ)</button>
+          </div>
+        </div>
+        <div class="lib-grid" id="libGrid"><div class="loading-state">กำลังโหลดข้อมูล...</div></div>
+        <div class="empty-state" id="emptyState" style="display:none;"><div class="big">🔍</div><div>ไม่พบเกมที่ตรงกับตัวกรอง ลองปรับเงื่อนไขใหม่อีกครั้ง</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= RESOURCES ================= -->
+  <section class="page" id="page-resources">
+    <div class="about-hero" style="max-width:100%;">
+      <h1 style="font-size:1.7rem;">คลังสื่อ &amp; แผนการสอน</h1>
+      <p>รวมไฟล์ประกอบการสอนที่จับคู่กับเกมในระบบ วางเป็นลิงก์จาก Google Drive/OneDrive</p>
+    </div>
+    <div class="tabs-row" id="resTabs">
+      <button class="tab-btn active" data-restab="แบบบันทึกคะแนน">แบบบันทึกคะแนน</button>
+      <button class="tab-btn" data-restab="สไลด์ประกอบ">สไลด์ประกอบ</button>
+      <button class="tab-btn" data-restab="แผนการจัดการเรียนรู้">แผนการจัดการเรียนรู้</button>
+    </div>
+    <div class="res-add-card admin-only" style="display:none;">
+      <h4>+ เพิ่มไฟล์ในหมวดนี้ (แอดมิน)</h4>
+      <div class="res-add-grid">
+        <div class="field"><label>ชื่อไฟล์</label><input type="text" id="resName"></div>
+        <div class="field"><label>กลุ่มสาระ</label><select id="resSubj"></select></div>
+        <div class="field"><label>ประเภทไฟล์/ขนาด</label><input type="text" id="resSize" placeholder="เช่น PDF · 200 KB"></div>
+        <div class="field"><label>ลิงก์ไฟล์</label><input type="url" id="resLink" placeholder="https://"></div>
+        <button class="res-add-btn" id="resAddBtn">เพิ่มไฟล์</button>
+      </div>
+    </div>
+    <div class="res-list" id="resList"><div class="loading-state">กำลังโหลดข้อมูล...</div></div>
+  </section>
+
+  <!-- ================= SUBMIT ================= -->
+  <section class="page" id="page-submit">
+    <div class="about-hero" style="max-width:100%;">
+      <h1 style="font-size:1.7rem;">ส่ง/แนะนำเกมเข้าระบบ</h1>
+      <p>ทุกคนส่งได้โดยไม่ต้องล็อกอิน ระบบจะบันทึกเข้าคิว "รอตรวจสอบ" ให้แอดมินตรวจก่อนเผยแพร่</p>
+    </div>
+    <div class="form-card">
+      <form id="submitForm">
+        <div class="field"><label>ชื่อเกม *</label><input type="text" id="subName" required></div>
+        <div class="field"><label>ลิงก์เกม *</label><input type="url" id="subLink" placeholder="https://" required></div>
+        <div class="field-row">
+          <div class="field"><label>กลุ่มสาระการเรียนรู้ *</label><select id="submitSubject" required><option value="">เลือกกลุ่มสาระ</option></select></div>
+          <div class="field"><label>ระดับชั้น *</label><select id="submitLevel" required><option value="">เลือกระดับชั้น</option></select></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>แพลตฟอร์ม *</label><select id="submitPlatform" required><option value="">เลือกแพลตฟอร์ม</option></select></div>
+          <div class="field"><label>รหัสตัวชี้วัด</label><input type="text" id="subCode" placeholder="เช่น ค 1.1 ป.4/2"></div>
+        </div>
+        <div class="field"><label>สาระสำคัญ/หัวข้อบทเรียน</label><input type="text" id="subTopic"></div>
+        <div class="field"><label>คำอธิบายสั้น ๆ</label><textarea rows="3" id="subDesc"></textarea></div>
+        <button type="submit" class="submit-btn" id="submitBtn">ส่งข้อมูล</button>
+        <div class="toast" id="submitToast"></div>
+      </form>
+    </div>
+
+    <div class="status-list admin-only" id="pendingSection" style="display:none;">
+      <div style="font-size:.85rem;font-weight:600;margin-bottom:4px;">คิวรอตรวจสอบ (แอดมินเท่านั้น)</div>
+      <div id="statusListInner"></div>
+    </div>
+  </section>
+
+  <!-- ================= ABOUT ================= -->
+  <section class="page" id="page-about">
+    <div class="about-hero">
+      <h1>เกี่ยวกับโครงการ</h1>
+      <p>"คลังเกมการศึกษาอ้างอิงหลักสูตรแกนกลาง" ช่วยให้ครู ผู้ปกครอง และนักเรียน ค้นหาสื่อเกมออนไลน์ที่สอดคล้องกับตัวชี้วัดของหลักสูตรแกนกลางได้ง่ายและรวดเร็ว ข้อมูลเก็บบนฐานข้อมูล Supabase แก้ไขได้จริงผ่านเว็บโดยแอดมินที่ล็อกอินด้วยบัญชี Google ที่ได้รับอนุญาตเท่านั้น</p>
+    </div>
+    <div class="about-grid">
+      <div class="about-card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 19V5a2 2 0 012-2h13v18H6a2 2 0 01-2-2z"/><path d="M8 7h8M8 11h8"/></svg></div><h4>อ้างอิงหลักสูตรจริง</h4><p>ทุกเกมระบุรหัสตัวชี้วัดและสมรรถนะสำคัญ พร้อมข้อความอ้างอิงสำหรับแนบในแผนการสอน</p></div>
+      <div class="about-card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg></div><h4>ฐานข้อมูลจริง เรียลไทม์</h4><p>ข้อมูลเก็บบน Postgres ผ่าน Supabase ปลอดภัยด้วย Row Level Security และล็อกอินจริงผ่าน Google</p></div>
+      <div class="about-card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 12h-4l-3 9-6-18-3 9H2"/></svg></div><h4>ฟรี ไม่มีค่าใช้จ่าย</h4><p>เข้าถึงคลังเกมและสื่อประกอบได้ฟรี เพื่อสนับสนุนการจัดการเรียนรู้ในทุกโรงเรียน</p></div>
+    </div>
+    <div class="block-head" style="margin-top:10px;"><h2>ติดต่อผู้พัฒนา</h2></div>
+    <div class="contact-card">
+      <div class="contact-row"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 4l8 8 8-8"/></svg></div> teacher.gamehub@example.ac.th</div>
+      <div class="contact-row"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20"/></svg></div> เพจ Facebook: คลังเกมการศึกษา</div>
+    </div>
+  </section>
+
+</main>
+<footer>© 2569 คลังเกมการศึกษาอ้างอิงหลักสูตรแกนกลาง — ขับเคลื่อนด้วย Supabase</footer>
+
+<!-- Detail modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-cover" id="modalCover">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div class="icon" id="modalIcon"></div>
+      <div class="titles"><div class="sub" id="modalSubject"></div><h2 id="modalName"></h2></div>
+    </div>
+    <div class="modal-body">
+      <p class="desc" id="modalDesc"></p>
+      <div class="info-grid">
+        <div class="info-item"><div class="lab">รหัสตัวชี้วัด</div><div class="val" id="modalCode"></div></div>
+        <div class="info-item"><div class="lab">ระดับชั้น</div><div class="val" id="modalLevel"></div></div>
+        <div class="info-item"><div class="lab">สาระสำคัญ / หัวข้อบทเรียน</div><div class="val" id="modalTopic"></div></div>
+        <div class="info-item"><div class="lab">แพลตฟอร์มต้นทาง</div><div class="val" id="modalPlatform"></div></div>
+      </div>
+      <div><div class="info-item lab" style="margin-bottom:8px;background:none;padding:0;">สมรรถนะสำคัญของผู้เรียน</div><div class="comp-tags" id="modalComps"></div></div>
+      <div>
+        <div class="lab" style="font-size:.78rem;color:var(--ink-soft);margin-bottom:8px;">📋 ข้อความอ้างอิงสำหรับแผนการสอน</div>
+        <div class="cite-box" id="modalCite"></div>
+        <div class="cite-actions"><button class="copy-btn" id="copyBtn">คัดลอกข้อความ</button></div>
+      </div>
+      <a href="#" target="_blank" rel="noopener noreferrer" class="modal-play" id="modalPlay">เข้าเล่นเกม ↗</a>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit game modal (แอดมิน) -->
+<div class="modal-overlay" id="editOverlay">
+  <div class="modal">
+    <button class="modal-close" id="editClose" style="color:var(--ink-soft); background:#F0F1F5;">✕</button>
+    <div class="form-head"><h2 id="editModalTitle">เพิ่มเกมใหม่</h2></div>
+    <form id="editForm" style="padding:20px 26px 26px;">
+      <div class="field"><label>ชื่อเกม *</label><input type="text" id="edName" required></div>
+      <div class="field"><label>ลิงก์เกม</label><input type="url" id="edLink" placeholder="https://"></div>
+      <div class="field-row">
+        <div class="field"><label>กลุ่มสาระการเรียนรู้ *</label><select id="edSubject" required></select></div>
+        <div class="field"><label>ระดับชั้น *</label><select id="edLevel" required></select></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>แพลตฟอร์ม *</label><select id="edPlatform" required></select></div>
+        <div class="field"><label>รหัสตัวชี้วัด</label><input type="text" id="edCode"></div>
+      </div>
+      <div class="field"><label>สาระสำคัญ / หัวข้อบทเรียน</label><input type="text" id="edTopic"></div>
+      <div class="field"><label>คำอธิบายสั้น ๆ</label><textarea rows="3" id="edDesc"></textarea></div>
+      <div class="field"><label>สมรรถนะสำคัญของผู้เรียน</label><div class="checkbox-row" id="edComps"></div></div>
+      <div class="field"><div class="toggle-row">
+        <label><input type="checkbox" id="edPopular"> แสดงในหมวด "เกมยอดนิยม"</label>
+        <label><input type="checkbox" id="edNew"> แสดงในหมวด "เกมมาใหม่"</label>
+      </div></div>
+      <div class="form-actions">
+        <button type="button" class="delete-link" id="edDeleteBtn" style="display:none;">ลบเกมนี้</button>
+        <button type="submit" class="submit-btn">บันทึก</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+/* ============ CONFIG ============ */
+const SUBJECTS = [
+  { id:"thai",   name:"ภาษาไทย",                         code:"ท", color:"var(--thai)",   tint:"var(--thai-tint)",
+    icon:'<path d="M4 19V5a2 2 0 012-2h13v18H6a2 2 0 01-2-2z"/><path d="M8 7h8M8 11h8"/>' },
+  { id:"math",   name:"คณิตศาสตร์",                       code:"ค", color:"var(--math)",   tint:"var(--math-tint)",
+    icon:'<path d="M4 6h16M4 18h16M9 6l6 12M15 6l-6 12"/>' },
+  { id:"sci",    name:"วิทยาศาสตร์และเทคโนโลยี",           code:"ว", color:"var(--sci)",    tint:"var(--sci-tint)",
+    icon:'<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/>' },
+  { id:"soc",    name:"สังคมศึกษา ศาสนา และวัฒนธรรม",       code:"ส", color:"var(--soc)",    tint:"var(--soc-tint)",
+    icon:'<path d="M12 21c4-3 7-6.5 7-11a7 7 0 10-14 0c0 4.5 3 8 7 11z"/><circle cx="12" cy="10" r="2.5"/>' },
+  { id:"pe",     name:"สุขศึกษาและพลศึกษา",                 code:"พ", color:"var(--pe)",     tint:"var(--pe-tint)",
+    icon:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>' },
+  { id:"art",    name:"ศิลปะ",                             code:"ศ", color:"var(--art)",    tint:"var(--art-tint)",
+    icon:'<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.2" fill="#fff"/><circle cx="14" cy="8" r="1.2" fill="#fff"/><circle cx="15" cy="14" r="1.2" fill="#fff"/>' },
+  { id:"career", name:"การงานอาชีพ",                       code:"ง", color:"var(--career)", tint:"var(--career-tint)",
+    icon:'<path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/>' },
+  { id:"lang",   name:"ภาษาต่างประเทศ",                     code:"อ", color:"var(--lang)",   tint:"var(--lang-tint)",
+    icon:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18 14 14 0 010-18z"/>' }
+];
+const LEVELS = ["อนุบาล","ประถมต้น (ป.1-3)","ประถมปลาย (ป.4-6)","มัธยมศึกษา"];
+const PLATFORMS = ["Wordwall","Kahoot","Quizizz","Blooket","อื่นๆ"];
+const COMPETENCIES = ["ความสามารถในการสื่อสาร","ความสามารถในการคิด","ความสามารถในการแก้ปัญหา","ความสามารถในการใช้ทักษะชีวิต","ความสามารถในการใช้เทคโนโลยี"];
+const PLATFORM_URL = { "Wordwall":"https://wordwall.net", "Kahoot":"https://kahoot.com", "Quizizz":"https://quizizz.com", "Blooket":"https://www.blooket.com", "อื่นๆ":"" };
+
+const subjById = id => SUBJECTS.find(s => s.id === id) || SUBJECTS[0];
+function iconMarkup(subj, size, stroke){ return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="${stroke}" stroke-width="2">${subj.icon}</svg>`; }
+function gameLink(g){ return (g.link && g.link.trim()) ? g.link.trim() : (PLATFORM_URL[g.platform] || "#"); }
+function populateSelect(el, values, placeholder){
+  el.innerHTML = (placeholder ? `<option value="">${placeholder}</option>` : "") +
+    values.map(v => typeof v === 'string' ? `<option value="${v}">${v}</option>` : `<option value="${v.id}">${v.name}</option>`).join('');
+}
+
+/* ============ FALLBACK DATA (ระหว่างยังไม่ได้ตั้งค่า Supabase) ============ */
+const SEED_GAMES = [
+  { subj:"thai", name:"จับคู่พยัญชนะไทย", topic:"พยัญชนะไทยและคำพื้นฐาน", code:"ท 1.1 ป.1/2", level:"ประถมต้น (ป.1-3)", platform:"Wordwall", desc:"เกมจับคู่รูปภาพกับพยัญชนะไทย ฝึกจดจำตัวอักษรผ่านการเล่นซ้ำ", comps:[0,1], popular:true, isNew:false, link:"", status:"อนุมัติ" },
+  { subj:"math", name:"นักสำรวจเศษส่วน", topic:"การบวก-ลบเศษส่วน", code:"ค 1.1 ป.4/2", level:"ประถมปลาย (ป.4-6)", platform:"Wordwall", desc:"เกมไขปริศนาเศษส่วนแบบมีขั้นตอน เหมาะสำหรับทบทวนก่อนสอบ", comps:[1,2], popular:true, isNew:false, link:"", status:"อนุมัติ" },
+  { subj:"sci", name:"ห้องทดลองสถานะของสาร", topic:"สมบัติของสสาร", code:"ว 2.1 ป.4/1", level:"ประถมปลาย (ป.4-6)", platform:"Wordwall", desc:"จำลองการเปลี่ยนสถานะของสสาร ของแข็ง ของเหลว แก๊ส ผ่านกิจกรรมโต้ตอบ", comps:[1,4], popular:true, isNew:false, link:"", status:"อนุมัติ" },
+  { subj:"lang", name:"Word Safari: สัตว์และสีสัน", topic:"คำศัพท์พื้นฐานภาษาอังกฤษ", code:"อ 1.1 ป.2/1", level:"ประถมต้น (ป.1-3)", platform:"Wordwall", desc:"เกมจับคู่คำศัพท์ภาษาอังกฤษกับรูปภาพสัตว์และสี", comps:[0,1], popular:true, isNew:true, link:"", status:"อนุมัติ" }
+].map((g,i) => ({ ...g, id:'seed_'+i }));
+const SEED_RESOURCES = [
+  { name:"แบบบันทึกคะแนนกลุ่มสาระภาษาไทย.pdf", category:"แบบบันทึกคะแนน", subj:"thai", size:"210 KB", link:"" },
+  { name:"สไลด์ประกอบ เศษส่วนน่ารู้.pptx", category:"สไลด์ประกอบ", subj:"math", size:"3.2 MB", link:"" }
+].map((r,i) => ({ ...r, id:'seedr_'+i }));
+
+let GAMES = [];
+let RESOURCES = [];
+let usingLiveData = false;
+let isAdmin = false;
+let sb = null;
+const configured = () => SUPABASE_URL && !SUPABASE_URL.startsWith('PASTE_') && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.startsWith('PASTE_');
+
+/* ============ DB MAPPING HELPERS ============ */
+function dbToGame(r){
+  return { id:r.id, name:r.name, link:r.link||'', subj:r.subject, level:r.level, platform:r.platform, code:r.code||'', topic:r.topic||'', desc:r.description||'', comps:r.competencies||[], popular:!!r.popular, isNew:!!r.is_new, status:r.status, source:r.source };
+}
+function dbToResource(r){ return { id:r.id, name:r.name, category:r.category, subj:r.subject, size:r.size||'', link:r.link||'' }; }
+
+/* ============ LOAD / REFRESH ============ */
+async function loadAll(){
+  if(!configured()){ GAMES = SEED_GAMES; RESOURCES = SEED_RESOURCES; usingLiveData = false; return; }
+  try{
+    const [gRes, rRes] = await Promise.all([
+      sb.from('games').select('*').order('created_at', { ascending:false }),
+      sb.from('resources').select('*').order('created_at', { ascending:false })
+    ]);
+    if(gRes.error) throw gRes.error;
+    if(rRes.error) throw rRes.error;
+    GAMES = gRes.data.map(dbToGame);
+    RESOURCES = rRes.data.map(dbToResource);
+    usingLiveData = true;
+  }catch(e){
+    console.warn('โหลดจาก Supabase ไม่สำเร็จ ใช้ข้อมูลตัวอย่างแทน', e);
+    GAMES = SEED_GAMES; RESOURCES = SEED_RESOURCES; usingLiveData = false;
+  }
+}
+async function manualRefresh(){ await loadAll(); refreshAll(); }
+
+/* ============ AUTH ============ */
+async function checkAdmin(email){
+  if(!email) return false;
+  try{
+    const { data, error } = await sb.from('admins').select('email').eq('email', email.toLowerCase()).maybeSingle();
+    return !!data && !error;
+  }catch(e){ return false; }
+}
+async function refreshAuthUI(){
+  if(!configured()) return;
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session && session.user){
+    const admin = await checkAdmin(session.user.email);
+    if(admin){
+      isAdmin = true; document.body.classList.add('is-admin');
+      document.getElementById('adminName').textContent = session.user.user_metadata?.full_name || session.user.email;
+      document.getElementById('adminPicture').src = session.user.user_metadata?.avatar_url || '';
+    } else {
+      isAdmin = false; document.body.classList.remove('is-admin');
+      alert('บัญชีนี้ (' + session.user.email + ') ไม่มีสิทธิ์แอดมิน กรุณาติดต่อผู้ดูแลระบบให้เพิ่มอีเมลนี้ในตาราง admins');
+      await sb.auth.signOut();
+    }
+  } else {
+    isAdmin = false; document.body.classList.remove('is-admin');
+  }
+}
+async function signIn(){
+  await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin + window.location.pathname } });
+}
+async function signOutUser(){ await sb.auth.signOut(); isAdmin=false; document.body.classList.remove('is-admin'); refreshAll(); }
+document.getElementById('signInBtn').addEventListener('click', signIn);
+document.getElementById('signOutBtn').addEventListener('click', signOutUser);
+
+/* ============ GAME CARD ============ */
+function gameCard(g){
+  const s = subjById(g.subj);
+  const pendingBadge = g.status && g.status !== 'อนุมัติ' ? `<span class="badge-pending">รอตรวจสอบ</span>` : '';
+  return `
+  <div class="card" data-id="${g.id}">
+    <div class="card-cover" style="--tint:${s.tint};" onclick="openModalById('${g.id}')">
+      <div class="badges"><span class="badge" style="--c:${s.color}">${s.name}</span></div>
+      ${pendingBadge}
+      <div class="icon" style="--c:${s.color}">${iconMarkup(s,22,'#fff')}</div>
+      <div class="card-actions">
+        <button class="icon-btn edit" title="แก้ไข" onclick="event.stopPropagation(); openEditGame('${g.id}')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+        <button class="icon-btn danger" title="ลบ" onclick="event.stopPropagation(); deleteGame('${g.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg></button>
+      </div>
+    </div>
+    <div class="card-body" onclick="openModalById('${g.id}')">
+      <h3>${g.name}</h3><p class="desc">${g.desc || ''}</p>
+      <div class="card-meta"><span class="code" style="--c:${s.color};--tint:${s.tint}">${g.code || '—'}</span><span>${g.level.split(' ')[0]}</span></div>
+    </div>
+    <div class="card-foot">
+      <button class="btn btn-ghost" onclick="openModalById('${g.id}')">ดูรายละเอียด</button>
+      <a class="btn btn-primary" style="--c:${s.color}" href="${gameLink(g)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">เข้าเล่นเกม</a>
+    </div>
+  </div>`;
+}
+const findGame = id => GAMES.find(g => g.id === id);
+
+/* ============ DETAIL MODAL ============ */
+function openModalById(id){ openModal(findGame(id)); }
+function openModal(g){
+  if(!g) return;
+  const s = subjById(g.subj);
+  document.getElementById('modalCover').style.background = s.color;
+  document.getElementById('modalIcon').innerHTML = iconMarkup(s,26,s.color);
+  document.getElementById('modalSubject').textContent = s.name;
+  document.getElementById('modalName').textContent = g.name;
+  document.getElementById('modalDesc').textContent = g.desc || '(ยังไม่มีคำอธิบาย)';
+  document.getElementById('modalCode').textContent = g.code || '—';
+  document.getElementById('modalLevel').textContent = g.level;
+  document.getElementById('modalTopic').textContent = g.topic || '—';
+  document.getElementById('modalPlatform').textContent = g.platform;
+  document.getElementById('modalComps').innerHTML = (g.comps||[]).map(i => `<span class="comp-tag" style="--c:${s.color};--tint:${s.tint}">${COMPETENCIES[i]}</span>`).join('') || '<span style="color:var(--ink-soft);font-size:.82rem;">ยังไม่ได้ระบุ</span>';
+  const citeText = `สื่อ: "${g.name}" (${g.platform}). กลุ่มสาระ${s.name} สอดคล้องตัวชี้วัด ${g.code||'-'} — สาระสำคัญ: ${g.topic||'-'}. สืบค้นจาก ${gameLink(g)} [เข้าถึงเมื่อ ${new Date().toLocaleDateString('th-TH')}]`;
+  document.getElementById('modalCite').textContent = citeText;
+  document.getElementById('modalPlay').href = gameLink(g);
+  document.getElementById('modalPlay').style.setProperty('--c', s.color);
+  const copyBtn = document.getElementById('copyBtn');
+  copyBtn.classList.remove('copied'); copyBtn.textContent = 'คัดลอกข้อความ';
+  copyBtn.onclick = () => { navigator.clipboard.writeText(citeText).then(() => { copyBtn.textContent='✓ คัดลอกแล้ว'; copyBtn.classList.add('copied'); setTimeout(()=>{ copyBtn.textContent='คัดลอกข้อความ'; copyBtn.classList.remove('copied'); },1800); }); };
+  document.getElementById('modalOverlay').classList.add('active');
+}
+document.getElementById('modalClose').onclick = () => document.getElementById('modalOverlay').classList.remove('active');
+document.getElementById('modalOverlay').addEventListener('click', e => { if(e.target.id === 'modalOverlay') e.currentTarget.classList.remove('active'); });
+
+/* ============ ADD / EDIT GAME (แอดมิน) ============ */
+let editingId = null;
+function initEditFormOptions(){
+  populateSelect(document.getElementById('edSubject'), SUBJECTS, null);
+  populateSelect(document.getElementById('edLevel'), LEVELS, null);
+  populateSelect(document.getElementById('edPlatform'), PLATFORMS, null);
+  document.getElementById('edComps').innerHTML = COMPETENCIES.map((c,i)=>`<label class="checkbox-chip"><input type="checkbox" value="${i}" class="edCompChk"> ${c}</label>`).join('');
+}
+function openAddGame(){
+  editingId = null;
+  document.getElementById('editModalTitle').textContent = 'เพิ่มเกมใหม่';
+  document.getElementById('editForm').reset();
+  document.querySelectorAll('.edCompChk').forEach(c=>c.checked=false);
+  document.getElementById('edDeleteBtn').style.display = 'none';
+  document.getElementById('editOverlay').classList.add('active');
+}
+function openEditGame(id){
+  const g = findGame(id); if(!g) return;
+  editingId = id;
+  document.getElementById('editModalTitle').textContent = 'แก้ไขข้อมูลเกม';
+  document.getElementById('edName').value = g.name;
+  document.getElementById('edLink').value = g.link||'';
+  document.getElementById('edSubject').value = g.subj;
+  document.getElementById('edLevel').value = g.level;
+  document.getElementById('edPlatform').value = g.platform;
+  document.getElementById('edCode').value = g.code||'';
+  document.getElementById('edTopic').value = g.topic||'';
+  document.getElementById('edDesc').value = g.desc||'';
+  document.querySelectorAll('.edCompChk').forEach(c=>c.checked=(g.comps||[]).includes(Number(c.value)));
+  document.getElementById('edPopular').checked = !!g.popular;
+  document.getElementById('edNew').checked = !!g.isNew;
+  document.getElementById('edDeleteBtn').style.display = 'inline-flex';
+  document.getElementById('editOverlay').classList.add('active');
+}
+function closeEditModal(){ document.getElementById('editOverlay').classList.remove('active'); }
+document.getElementById('editClose').onclick = closeEditModal;
+document.getElementById('editOverlay').addEventListener('click', e => { if(e.target.id==='editOverlay') closeEditModal(); });
+document.getElementById('openAddGameBtn').addEventListener('click', openAddGame);
+
+document.getElementById('editForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const comps = Array.from(document.querySelectorAll('.edCompChk')).filter(c=>c.checked).map(c=>Number(c.value));
+  const payload = {
+    name: document.getElementById('edName').value.trim(),
+    link: document.getElementById('edLink').value.trim(),
+    subject: document.getElementById('edSubject').value,
+    level: document.getElementById('edLevel').value,
+    platform: document.getElementById('edPlatform').value,
+    code: document.getElementById('edCode').value.trim(),
+    topic: document.getElementById('edTopic').value.trim(),
+    description: document.getElementById('edDesc').value.trim(),
+    competencies: comps,
+    popular: document.getElementById('edPopular').checked,
+    is_new: document.getElementById('edNew').checked
+  };
+  if(!payload.name || !payload.subject || !payload.level || !payload.platform){ alert('กรุณากรอกข้อมูลที่มี * ให้ครบ'); return; }
+  if(editingId){
+    const { error } = await sb.from('games').update(payload).eq('id', editingId);
+    if(error) alert('บันทึกไม่สำเร็จ: '+error.message);
+  } else {
+    payload.status = 'อนุมัติ'; payload.source = 'admin';
+    const { error } = await sb.from('games').insert(payload);
+    if(error) alert('เพิ่มไม่สำเร็จ: '+error.message);
+  }
+  closeEditModal(); await manualRefresh();
+});
+document.getElementById('edDeleteBtn').addEventListener('click', async () => {
+  if(!editingId) return;
+  const g = findGame(editingId);
+  if(confirm(`ลบเกม "${g.name}" ออกจากระบบ?`)){
+    const { error } = await sb.from('games').delete().eq('id', editingId);
+    if(error) alert('ลบไม่สำเร็จ: '+error.message);
+    closeEditModal(); await manualRefresh();
+  }
+});
+async function deleteGame(id){
+  const g = findGame(id); if(!g) return;
+  if(confirm(`ลบเกม "${g.name}" ออกจากระบบ?`)){
+    const { error } = await sb.from('games').delete().eq('id', id);
+    if(error) alert('ลบไม่สำเร็จ: '+error.message);
+    await manualRefresh();
+  }
+}
+async function approveGame(id){
+  const { error } = await sb.from('games').update({ status:'อนุมัติ' }).eq('id', id);
+  if(error) alert('อนุมัติไม่สำเร็จ: '+error.message);
+  await manualRefresh();
+}
+
+/* ============ HOME / LIBRARY RENDER ============ */
+function visibleGames(){ return GAMES.filter(g => g.status === 'อนุมัติ' || document.body.classList.contains('is-admin')); }
+function renderHome(){
+  const vis = visibleGames();
+  document.getElementById('statGames').textContent = GAMES.filter(g=>g.status==='อนุมัติ').length;
+  document.getElementById('statPending').textContent = isAdmin ? GAMES.filter(g=>g.status && g.status!=='อนุมัติ').length : '–';
+  const pop = vis.filter(g=>g.popular), nw = vis.filter(g=>g.isNew);
+  document.getElementById('railPopular').innerHTML = pop.length ? pop.map(gameCard).join('') : `<div class="rail-empty">ยังไม่มีเกมยอดนิยม</div>`;
+  document.getElementById('railNew').innerHTML = nw.length ? nw.map(gameCard).join('') : `<div class="rail-empty">ยังไม่มีเกมมาใหม่</div>`;
+  document.getElementById('subjectGrid').innerHTML = SUBJECTS.map(s => `
+    <button class="subject-tile" style="--tint:${s.tint}" onclick="goToLibrary('${s.id}')">
+      <div class="icon" style="--c:${s.color}">${iconMarkup(s,20,'#fff')}</div>
+      <div class="name">${s.name}</div><div class="count">${vis.filter(g=>g.subj===s.id).length} เกม · ${s.code}</div>
+    </button>`).join('');
+}
+function goToLibrary(subjId){ navigate('library'); document.getElementById('fSubject').value = subjId; applyFilters(); }
+let currentSort = 'popular';
+function initFilters(){
+  populateSelect(document.getElementById('fSubject'), SUBJECTS, 'ทั้งหมด');
+  populateSelect(document.getElementById('fLevel'), LEVELS, 'ทั้งหมด');
+  populateSelect(document.getElementById('fPlatform'), PLATFORMS, 'ทั้งหมด');
+  populateSelect(document.getElementById('submitSubject'), SUBJECTS, 'เลือกกลุ่มสาระ');
+  populateSelect(document.getElementById('submitLevel'), LEVELS, 'เลือกระดับชั้น');
+  populateSelect(document.getElementById('submitPlatform'), PLATFORMS, 'เลือกแพลตฟอร์ม');
+  populateSelect(document.getElementById('resSubj'), SUBJECTS, null);
+  ['fSubject','fLevel','fPlatform'].forEach(id => document.getElementById(id).addEventListener('change', applyFilters));
+  document.getElementById('fSearch').addEventListener('input', applyFilters);
+  document.getElementById('clearFilters').addEventListener('click', () => {
+    document.getElementById('fSubject').value=''; document.getElementById('fLevel').value='';
+    document.getElementById('fPlatform').value=''; document.getElementById('fSearch').value=''; applyFilters();
+  });
+  document.querySelectorAll('#sortChips .chip').forEach(chip => chip.addEventListener('click', () => {
+    document.querySelectorAll('#sortChips .chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active'); currentSort = chip.dataset.sort; applyFilters();
+  }));
+  document.getElementById('refreshBtn').addEventListener('click', manualRefresh);
+  document.getElementById('sheetEditLink').href = (ADMIN_LINK_URL && !ADMIN_LINK_URL.startsWith('PASTE_')) ? ADMIN_LINK_URL : '#';
+}
+function applyFilters(){
+  const subj=document.getElementById('fSubject').value, level=document.getElementById('fLevel').value, plat=document.getElementById('fPlatform').value, q=document.getElementById('fSearch').value.trim().toLowerCase();
+  let list = visibleGames().filter(g => {
+    if(subj && g.subj!==subj) return false;
+    if(level && g.level!==level) return false;
+    if(plat && g.platform!==plat) return false;
+    if(q && !((g.name||'').toLowerCase().includes(q)||(g.code||'').toLowerCase().includes(q)||(g.topic||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+  if(currentSort==='popular') list=list.slice().sort((a,b)=>(b.popular?1:0)-(a.popular?1:0));
+  if(currentSort==='new') list=list.slice().sort((a,b)=>(b.isNew?1:0)-(a.isNew?1:0));
+  if(currentSort==='name') list=list.slice().sort((a,b)=>a.name.localeCompare(b.name,'th'));
+  document.getElementById('resultCount').textContent = `พบ ${list.length} เกม`;
+  document.getElementById('libGrid').innerHTML = list.map(gameCard).join('');
+  document.getElementById('emptyState').style.display = list.length ? 'none' : 'block';
+  document.getElementById('libGrid').style.display = list.length ? 'grid' : 'none';
+  document.getElementById('openAddGameBtn').style.display = document.body.classList.contains('is-admin') ? 'inline-flex' : 'none';
+}
+
+/* ============ RESOURCES ============ */
+let currentResTab = 'แบบบันทึกคะแนน';
+function renderResources(){
+  const list = RESOURCES.filter(r => r.category === currentResTab);
+  document.getElementById('resList').innerHTML = list.length ? list.map(r => {
+    const s = subjById(r.subj); const hasLink = r.link && r.link.trim();
+    return `<div class="res-item">
+      <div class="res-icon" style="background:${s.tint}">${iconMarkup(s,20,s.color)}</div>
+      <div class="res-info"><div class="name">${r.name}</div><div class="meta">${s.name} · ${r.size||''}</div></div>
+      <button class="res-download" onclick="${hasLink ? `window.open('${r.link}','_blank')` : `alert('ยังไม่มีลิงก์ไฟล์นี้')`}">${hasLink ? 'เปิดไฟล์' : 'ไม่มีลิงก์'}</button>
+      <button class="res-del" title="ลบ" onclick="deleteResource('${r.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg></button>
+    </div>`;
+  }).join('') : `<div class="status-empty">ยังไม่มีไฟล์ในหมวดนี้</div>`;
+}
+document.querySelectorAll('#resTabs .tab-btn').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('#resTabs .tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); currentResTab = btn.dataset.restab; renderResources();
+}));
+document.getElementById('resAddBtn').addEventListener('click', async () => {
+  const name = document.getElementById('resName').value.trim();
+  if(!name){ alert('กรุณาใส่ชื่อไฟล์'); return; }
+  const { error } = await sb.from('resources').insert({
+    name, category: currentResTab, subject: document.getElementById('resSubj').value,
+    size: document.getElementById('resSize').value.trim(), link: document.getElementById('resLink').value.trim()
+  });
+  if(error) alert('เพิ่มไม่สำเร็จ: '+error.message);
+  document.getElementById('resName').value=''; document.getElementById('resSize').value=''; document.getElementById('resLink').value='';
+  await manualRefresh();
+});
+async function deleteResource(id){
+  if(!confirm('ลบไฟล์นี้?')) return;
+  const { error } = await sb.from('resources').delete().eq('id', id);
+  if(error) alert('ลบไม่สำเร็จ: '+error.message);
+  await manualRefresh();
+}
+
+/* ============ SUBMIT (สาธารณะ, insert ตรงผ่าน Supabase) ============ */
+document.getElementById('submitForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+  const payload = {
+    name: document.getElementById('subName').value.trim(),
+    link: document.getElementById('subLink').value.trim(),
+    subject: document.getElementById('submitSubject').value,
+    level: document.getElementById('submitLevel').value,
+    platform: document.getElementById('submitPlatform').value,
+    code: document.getElementById('subCode').value.trim(),
+    topic: document.getElementById('subTopic').value.trim(),
+    description: document.getElementById('subDesc').value.trim(),
+    status: 'รอตรวจสอบ', source: 'submitted', popular:false, is_new:true
+  };
+  const toast = document.getElementById('submitToast');
+  if(!configured()){
+    toast.className='toast show error'; toast.textContent='⚠️ ยังไม่ได้เชื่อมต่อ Supabase ทดสอบฟอร์มนี้ไม่ได้ตอนนี้';
+    btn.disabled=false; btn.textContent='ส่งข้อมูล'; return;
+  }
+  const { error } = await sb.from('games').insert(payload);
+  if(!error){ toast.className='toast show'; toast.textContent='✅ ส่งสำเร็จ! รอแอดมินตรวจสอบก่อนเผยแพร่'; e.target.reset(); await manualRefresh(); }
+  else{ toast.className='toast show error'; toast.textContent='เกิดข้อผิดพลาด: '+error.message; }
+  btn.disabled=false; btn.textContent='ส่งข้อมูล';
+  setTimeout(()=>toast.classList.remove('show'), 5000);
+});
+function renderPendingQueue(){
+  const pending = GAMES.filter(g => g.status && g.status !== 'อนุมัติ');
+  document.getElementById('pendingBadge').textContent = pending.length;
+  document.getElementById('pendingBadge').style.display = pending.length ? 'flex' : 'none';
+  document.getElementById('pendingSection').style.display = document.body.classList.contains('is-admin') ? 'flex' : 'none';
+  const box = document.getElementById('statusListInner');
+  box.innerHTML = pending.length ? pending.map(g => `
+    <div class="status-row">
+      <span class="name">${g.name}</span>
+      <span class="pill pill-pending">รอตรวจสอบ</span>
+      <div class="actions">
+        <button class="mini-action approve" onclick="approveGame('${g.id}')">อนุมัติ</button>
+        <button class="mini-action remove" onclick="deleteGame('${g.id}')">ลบ</button>
+      </div>
+    </div>`).join('') : `<div class="status-empty">ไม่มีรายการรอตรวจสอบ</div>`;
+}
+
+/* ============ SYNC BANNER ============ */
+function renderSyncBanner(){
+  const el = document.getElementById('syncBanner');
+  if(!configured()){
+    el.className='sync-banner show'; el.innerHTML = `⚠️ ยังไม่ได้ตั้งค่า Supabase — กำลังแสดง<strong>ข้อมูลตัวอย่าง</strong> ดูวิธีตั้งค่าใน SETUP_GUIDE_SUPABASE.txt`;
+  } else if(usingLiveData){
+    el.className='sync-banner show ok'; el.innerHTML = `✅ เชื่อมต่อ Supabase แล้ว <button onclick="manualRefresh()">รีเฟรชตอนนี้</button>`;
+  } else {
+    el.className='sync-banner show'; el.innerHTML = `⚠️ เชื่อมต่อ Supabase ไม่สำเร็จ กำลังแสดงข้อมูลตัวอย่างชั่วคราว <button onclick="manualRefresh()">ลองใหม่</button>`;
+  }
+}
+
+/* ============ NAVIGATION ============ */
+function navigate(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-links > button').forEach(b=>b.classList.toggle('active', b.dataset.nav===page));
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+document.querySelectorAll('[data-nav]').forEach(el => el.addEventListener('click', () => navigate(el.dataset.nav)));
+document.getElementById('heroSearchBtn').addEventListener('click', () => { navigate('library'); document.getElementById('fSearch').value = document.getElementById('heroSearch').value; applyFilters(); });
+document.getElementById('heroSearch').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('heroSearchBtn').click(); });
+
+/* ============ INIT ============ */
+function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResources(); renderPendingQueue(); }
+(async function init(){
+  initFilters(); initEditFormOptions();
+  if(configured()){
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    sb.auth.onAuthStateChange(async () => { await refreshAuthUI(); refreshAll(); });
+  }
+  await loadAll();
+  await refreshAuthUI();
+  refreshAll();
+  navigate('home');
+})();
+</script>
+
+</body>
+</html>
