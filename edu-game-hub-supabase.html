@@ -180,6 +180,25 @@
   body.is-admin .res-del{ display:flex; }
   .res-del svg{ width:14px; height:14px; stroke:var(--ink-soft); fill:none; stroke-width:2.2; } .res-del:hover svg{ stroke:var(--danger); }
   .status-empty{ text-align:center; padding:30px; color:var(--ink-soft); font-size:.85rem; }
+
+  .manage-toolbar{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin:18px 0; flex-wrap:wrap; }
+  .manage-toolbar input{ padding:10px 14px; border-radius:9px; border:1px solid var(--line); font-family:'Kanit'; font-size:.88rem; background:var(--surface); min-width:240px; }
+  .manage-table-wrap{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow-x:auto; }
+  table.manage-table{ width:100%; border-collapse:collapse; font-size:.85rem; }
+  table.manage-table th{ text-align:left; padding:12px 14px; background:var(--bg); color:var(--ink-soft); font-weight:600; font-size:.76rem; white-space:nowrap; border-bottom:1px solid var(--line); }
+  table.manage-table td{ padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:middle; white-space:nowrap; }
+  table.manage-table tr:last-child td{ border-bottom:none; }
+  table.manage-table tr:hover td{ background:#FAFBFC; }
+  .manage-name{ font-weight:600; max-width:220px; white-space:normal; }
+  .manage-badge{ font-size:.7rem; font-weight:600; padding:3px 9px; border-radius:20px; }
+  .manage-badge.pending{ background:#FFF3D6; color:#9A6B00; }
+  .manage-badge.approved{ background:#DFF5E5; color:#1F9D4F; }
+  .manage-tag{ font-size:.72rem; padding:2px 8px; border-radius:6px; background:var(--bg); color:var(--ink-soft); }
+  .manage-actions{ display:flex; gap:6px; }
+  .manage-btn{ all:unset; cursor:pointer; font-size:.76rem; font-weight:600; padding:6px 10px; border-radius:7px; }
+  .manage-btn.edit{ background:#EAEDFC; color:var(--brand); }
+  .manage-btn.approve{ background:#DFF5E5; color:#1F9D4F; }
+  .manage-btn.remove{ background:#FCE9EC; color:var(--danger); }
   .res-add-card{ background:var(--surface); border:1px dashed var(--line); border-radius:12px; padding:16px; margin-bottom:20px; }
   .res-add-card h4{ font-size:.88rem; font-weight:700; margin-bottom:12px; }
   .res-add-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1.4fr auto; gap:10px; align-items:end; }
@@ -247,6 +266,7 @@
       <button data-nav="submit">ส่ง/แนะนำเกม <span class="nav-badge admin-only" id="pendingBadge" style="display:none;">0</span></button>
       <button data-nav="about">เกี่ยวกับเรา</button>
       <button data-nav="settings" class="admin-only">ตั้งค่าเว็บไซต์</button>
+      <button data-nav="manage" class="admin-only">จัดการเกม</button>
       <div class="auth-area">
         <button class="signin-btn" id="signInBtn">
           <svg class="g-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4C29.6 36.3 27 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 40.6 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.6 5.4C41.5 36 45 30.5 45 24c0-1.4-.1-2.7-1.4-3.5z"/></svg>
@@ -420,6 +440,26 @@
       <p>แก้ข้อความหน้าแรก/เกี่ยวกับเรา/ติดต่อ ที่แสดงบนเว็บนี้ได้จากตรงนี้เลย ไม่ต้องแก้ไฟล์</p>
     </div>
     <div class="form-card" id="settingsFormBox" style="max-width:680px;"></div>
+  </section>
+
+  <!-- ================= MANAGE GAMES (แอดมินเท่านั้น) ================= -->
+  <section class="page" id="page-manage">
+    <div class="about-hero" style="max-width:100%;">
+      <h1 style="font-size:1.7rem;">จัดการเกมทั้งหมด</h1>
+      <p>ดูรายการเกมทั้งหมดในระบบแบบตาราง แก้ไข ลบ หรืออนุมัติได้จากที่นี่</p>
+    </div>
+    <div class="manage-toolbar">
+      <input type="text" id="manageSearch" placeholder="ค้นหาชื่อเกม / รหัสตัวชี้วัด">
+      <button class="add-game-btn" id="manageAddBtn">+ เพิ่มเกมใหม่</button>
+    </div>
+    <div class="manage-table-wrap">
+      <table class="manage-table">
+        <thead><tr>
+          <th>ชื่อเกม</th><th>กลุ่มสาระ</th><th>ระดับชั้น</th><th>แพลตฟอร์ม</th><th>รหัสตัวชี้วัด</th><th>สถานะ</th><th>แท็ก</th><th>จัดการ</th>
+        </tr></thead>
+        <tbody id="manageTableBody"></tbody>
+      </table>
+    </div>
   </section>
 
 </main>
@@ -831,6 +871,37 @@ async function approveGame(id){
   await manualRefresh();
 }
 
+/* ============ MANAGE GAMES TABLE ============ */
+function renderManageTable(){
+  const body = document.getElementById('manageTableBody');
+  if(!body) return;
+  const q = (document.getElementById('manageSearch')?.value || '').trim().toLowerCase();
+  let list = GAMES.slice();
+  if(q) list = list.filter(g => (g.name||'').toLowerCase().includes(q) || (g.code||'').toLowerCase().includes(q));
+  if(!list.length){ body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:30px;">ไม่พบเกมที่ตรงกับคำค้นหา</td></tr>`; return; }
+  body.innerHTML = list.map(g => {
+    const s = subjById(g.subj);
+    const approved = g.status === 'อนุมัติ';
+    const tags = [g.popular ? 'ยอดนิยม' : '', g.isNew ? 'มาใหม่' : ''].filter(Boolean).map(t=>`<span class="manage-tag">${t}</span>`).join(' ') || '<span class="manage-tag">—</span>';
+    return `<tr>
+      <td class="manage-name">${g.name}</td>
+      <td>${s.name}</td>
+      <td>${g.level}</td>
+      <td>${g.platform}</td>
+      <td>${g.code || '—'}</td>
+      <td><span class="manage-badge ${approved?'approved':'pending'}">${approved?'อนุมัติแล้ว':'รอตรวจสอบ'}</span></td>
+      <td>${tags}</td>
+      <td><div class="manage-actions">
+        <button class="manage-btn edit" onclick="openEditGame('${g.id}')">แก้ไข</button>
+        ${!approved ? `<button class="manage-btn approve" onclick="approveGame('${g.id}')">อนุมัติ</button>` : ''}
+        <button class="manage-btn remove" onclick="deleteGame('${g.id}')">ลบ</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+document.getElementById('manageSearch')?.addEventListener('input', renderManageTable);
+document.getElementById('manageAddBtn')?.addEventListener('click', openAddGame);
+
 /* ============ HOME / LIBRARY RENDER ============ */
 function visibleGames(){ return GAMES.filter(g => g.status === 'อนุมัติ' || document.body.classList.contains('is-admin')); }
 function renderHome(){
@@ -1009,7 +1080,7 @@ document.getElementById('heroSearchBtn').addEventListener('click', () => { navig
 document.getElementById('heroSearch').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('heroSearchBtn').click(); });
 
 /* ============ INIT ============ */
-function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResources(); renderPendingQueue(); refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel'); applySettings(); renderSettingsForm(); }
+function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResources(); renderPendingQueue(); refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel'); applySettings(); renderSettingsForm(); renderManageTable(); }
 (async function init(){
   initFilters(); initEditFormOptions();
   if(configured()){
