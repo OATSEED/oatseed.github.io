@@ -374,7 +374,12 @@
         </div>
         <div class="field-row">
           <div class="field"><label>แพลตฟอร์ม *</label><select id="submitPlatform" required><option value="">เลือกแพลตฟอร์ม</option></select></div>
-          <div class="field"><label>รหัสตัวชี้วัด</label><input type="text" id="subCode" placeholder="เช่น ค 1.1 ป.4/2"></div>
+          <div class="field">
+            <label>รหัสตัวชี้วัด</label>
+            <select id="subCodePicker" style="margin-bottom:8px;"></select>
+            <input type="text" id="subCode" placeholder="เช่น ค 1.1 ป.4/2">
+            <div class="hint" id="subCodeHint"></div>
+          </div>
         </div>
         <div class="field"><label>สาระสำคัญ/หัวข้อบทเรียน</label><input type="text" id="subTopic"></div>
         <div class="field"><label>คำอธิบายสั้น ๆ</label><textarea rows="3" id="subDesc"></textarea></div>
@@ -452,7 +457,15 @@
       </div>
       <div class="field-row">
         <div class="field"><label>แพลตฟอร์ม *</label><select id="edPlatform" required></select></div>
-        <div class="field"><label>รหัสตัวชี้วัด</label><input type="text" id="edCode"></div>
+        <div class="field">
+          <label>รหัสตัวชี้วัด</label>
+          <select id="edCodePicker" style="margin-bottom:8px;"></select>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="edCode" placeholder="เช่น ค 1.1 ป.4/2" style="flex:1;">
+            <button type="button" id="edCodeSaveBtn" style="all:unset;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--brand);background:#EAEDFC;padding:0 12px;border-radius:8px;white-space:nowrap;">+ บันทึกเข้าธนาคาร</button>
+          </div>
+          <div class="hint" id="edCodeHint"></div>
+        </div>
       </div>
       <div class="field"><label>สาระสำคัญ / หัวข้อบทเรียน</label><input type="text" id="edTopic"></div>
       <div class="field"><label>คำอธิบายสั้น ๆ</label><textarea rows="3" id="edDesc"></textarea></div>
@@ -522,6 +535,7 @@ const SEED_RESOURCES = [
 
 let GAMES = [];
 let RESOURCES = [];
+let INDICATORS = [];
 let usingLiveData = false;
 let isAdmin = false;
 let sb = null;
@@ -535,20 +549,22 @@ function dbToResource(r){ return { id:r.id, name:r.name, category:r.category, su
 
 /* ============ LOAD / REFRESH ============ */
 async function loadAll(){
-  if(!configured()){ GAMES = SEED_GAMES; RESOURCES = SEED_RESOURCES; usingLiveData = false; return; }
+  if(!configured()){ GAMES = SEED_GAMES; RESOURCES = SEED_RESOURCES; INDICATORS = []; usingLiveData = false; return; }
   try{
-    const [gRes, rRes] = await Promise.all([
+    const [gRes, rRes, iRes] = await Promise.all([
       sb.from('games').select('*').order('created_at', { ascending:false }),
-      sb.from('resources').select('*').order('created_at', { ascending:false })
+      sb.from('resources').select('*').order('created_at', { ascending:false }),
+      sb.from('indicators').select('*').order('code', { ascending:true })
     ]);
     if(gRes.error) throw gRes.error;
     if(rRes.error) throw rRes.error;
     GAMES = gRes.data.map(dbToGame);
     RESOURCES = rRes.data.map(dbToResource);
+    INDICATORS = iRes.error ? [] : iRes.data;
     usingLiveData = true;
   }catch(e){
     console.warn('โหลดจาก Supabase ไม่สำเร็จ ใช้ข้อมูลตัวอย่างแทน', e);
-    GAMES = SEED_GAMES; RESOURCES = SEED_RESOURCES; usingLiveData = false;
+    GAMES = SEED_GAMES; RESOURCES = SEED_RESOURCES; INDICATORS = []; usingLiveData = false;
   }
 }
 async function manualRefresh(){ await loadAll(); refreshAll(); }
@@ -661,6 +677,8 @@ function initEditFormOptions(){
   populateSelect(document.getElementById('edLevel'), LEVELS, null);
   populateSelect(document.getElementById('edPlatform'), PLATFORMS, null);
   document.getElementById('edComps').innerHTML = COMPETENCIES.map((c,i)=>`<label class="checkbox-chip"><input type="checkbox" value="${i}" class="edCompChk"> ${c}</label>`).join('');
+  wireIndicatorPicker('edCodePicker', 'edCode', 'edCodeHint');
+  ['edSubject','edLevel'].forEach(id => document.getElementById(id).addEventListener('change', () => refreshIndicatorPicker('edCodePicker','edSubject','edLevel')));
 }
 function openAddGame(){
   editingId = null;
@@ -668,6 +686,7 @@ function openAddGame(){
   document.getElementById('editForm').reset();
   document.querySelectorAll('.edCompChk').forEach(c=>c.checked=false);
   document.getElementById('edDeleteBtn').style.display = 'none';
+  refreshIndicatorPicker('edCodePicker','edSubject','edLevel');
   document.getElementById('editOverlay').classList.add('active');
 }
 function openEditGame(id){
@@ -687,9 +706,27 @@ function openEditGame(id){
   document.getElementById('edPopular').checked = !!g.popular;
   document.getElementById('edNew').checked = !!g.isNew;
   document.getElementById('edDeleteBtn').style.display = 'inline-flex';
+  refreshIndicatorPicker('edCodePicker','edSubject','edLevel');
   document.getElementById('editOverlay').classList.add('active');
 }
 function closeEditModal(){ document.getElementById('editOverlay').classList.remove('active'); }
+document.getElementById('edCodeSaveBtn').addEventListener('click', async () => {
+  const code = document.getElementById('edCode').value.trim();
+  const subj = document.getElementById('edSubject').value;
+  const level = document.getElementById('edLevel').value;
+  if(!code){ alert('พิมพ์รหัสตัวชี้วัดในช่องก่อนครับ'); return; }
+  if(!subj || !level){ alert('เลือกกลุ่มสาระและระดับชั้นก่อนครับ'); return; }
+  const already = INDICATORS.some(i => i.subject===subj && i.level===level && i.code===code);
+  if(already){ alert('รหัสนี้มีอยู่ในธนาคารแล้วครับ'); return; }
+  const desc = prompt('คำอธิบายสั้นๆ ของตัวชี้วัดนี้ (เว้นว่างได้)') || '';
+  const { error } = await sb.from('indicators').insert({ subject:subj, level, code, description:desc });
+  if(error){ alert('บันทึกไม่สำเร็จ: '+error.message); return; }
+  const iRes = await sb.from('indicators').select('*').order('code', { ascending:true });
+  if(!iRes.error) INDICATORS = iRes.data;
+  refreshIndicatorPicker('edCodePicker','edSubject','edLevel');
+  refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel');
+  alert('เพิ่มเข้าธนาคารตัวชี้วัดแล้วครับ ครั้งต่อไปจะเลือกจากดรอปดาวน์ได้เลย');
+});
 document.getElementById('editClose').onclick = closeEditModal;
 document.getElementById('editOverlay').addEventListener('click', e => { if(e.target.id==='editOverlay') closeEditModal(); });
 document.getElementById('openAddGameBtn').addEventListener('click', openAddGame);
@@ -762,6 +799,22 @@ function renderHome(){
 }
 function goToLibrary(subjId){ navigate('library'); document.getElementById('fSubject').value = subjId; applyFilters(); }
 let currentSort = 'popular';
+function refreshIndicatorPicker(pickerId, subjId, levelId){
+  const picker = document.getElementById(pickerId);
+  const subj = document.getElementById(subjId).value;
+  const level = document.getElementById(levelId).value;
+  const list = INDICATORS.filter(i => (!subj || i.subject === subj) && (!level || i.level === level));
+  picker.innerHTML = '<option value="">— เลือกจากธนาคารตัวชี้วัด (ไม่บังคับ) —</option>' +
+    list.map(i => `<option value="${i.code}" data-desc="${(i.description||'').replace(/"/g,'&quot;')}">${i.code}${i.description ? ' — ' + i.description.slice(0,45) : ''}</option>`).join('');
+  if(!list.length && (subj || level)) picker.innerHTML = '<option value="">— ไม่มีตัวชี้วัดในธนาคารสำหรับกลุ่มสาระ/ระดับชั้นนี้ พิมพ์เองด้านล่าง —</option>';
+}
+function wireIndicatorPicker(pickerId, codeId, hintId){
+  document.getElementById(pickerId).addEventListener('change', function(){
+    const opt = this.options[this.selectedIndex];
+    if(this.value){ document.getElementById(codeId).value = this.value; document.getElementById(hintId).textContent = opt.dataset.desc || ''; }
+    else { document.getElementById(hintId).textContent = ''; }
+  });
+}
 function initFilters(){
   populateSelect(document.getElementById('fSubject'), SUBJECTS, 'ทั้งหมด');
   populateSelect(document.getElementById('fLevel'), LEVELS, 'ทั้งหมด');
@@ -770,6 +823,9 @@ function initFilters(){
   populateSelect(document.getElementById('submitLevel'), LEVELS, 'เลือกระดับชั้น');
   populateSelect(document.getElementById('submitPlatform'), PLATFORMS, 'เลือกแพลตฟอร์ม');
   populateSelect(document.getElementById('resSubj'), SUBJECTS, null);
+  wireIndicatorPicker('subCodePicker', 'subCode', 'subCodeHint');
+  ['submitSubject','submitLevel'].forEach(id => document.getElementById(id).addEventListener('change', () => refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel')));
+  refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel');
   ['fSubject','fLevel','fPlatform'].forEach(id => document.getElementById(id).addEventListener('change', applyFilters));
   document.getElementById('fSearch').addEventListener('input', applyFilters);
   document.getElementById('clearFilters').addEventListener('click', () => {
@@ -904,7 +960,7 @@ document.getElementById('heroSearchBtn').addEventListener('click', () => { navig
 document.getElementById('heroSearch').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('heroSearchBtn').click(); });
 
 /* ============ INIT ============ */
-function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResources(); renderPendingQueue(); }
+function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResources(); renderPendingQueue(); refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel'); }
 (async function init(){
   initFilters(); initEditFormOptions();
   if(configured()){
