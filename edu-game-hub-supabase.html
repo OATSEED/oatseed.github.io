@@ -93,10 +93,11 @@
   .card-cover{ height:120px; background:var(--tint,#eee); display:flex; align-items:center; justify-content:center; position:relative; }
   .card-cover .icon{ width:44px; height:44px; border-radius:12px; background:var(--c,#999); display:flex; align-items:center; justify-content:center; }
   .card-cover .icon svg{ width:24px; height:24px; }
-  .badges{ position:absolute; top:10px; left:10px; display:flex; gap:6px; }
+  .cover-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; }
+  .badges{ position:absolute; top:10px; left:10px; display:flex; gap:6px; z-index:2; }
   .badge{ font-size:.68rem; font-weight:600; padding:4px 9px; border-radius:20px; background:rgba(255,255,255,.9); color:var(--c,#333); }
-  .badge-pending{ position:absolute; top:10px; right:10px; font-size:.66rem; font-weight:700; padding:4px 9px; border-radius:20px; background:#FFF3D6; color:#9A6B00; }
-  .card-actions{ position:absolute; bottom:8px; right:8px; display:none; gap:6px; z-index:2; }
+  .badge-pending{ position:absolute; top:10px; right:10px; font-size:.66rem; font-weight:700; padding:4px 9px; border-radius:20px; background:#FFF3D6; color:#9A6B00; z-index:2; }
+  .card-actions{ position:absolute; bottom:8px; right:8px; display:none; gap:6px; z-index:3; }
   body.is-admin .card-actions{ display:flex; }
   .icon-btn{ all:unset; cursor:pointer; width:26px; height:26px; border-radius:7px; background:rgba(255,255,255,.95); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,.15); }
   .icon-btn svg{ width:13px; height:13px; stroke:var(--ink-soft); fill:none; stroke-width:2.2; }
@@ -133,10 +134,12 @@
   .modal-overlay{ position:fixed; inset:0; background:rgba(20,22,30,.55); backdrop-filter:blur(2px); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
   .modal-overlay.active{ display:flex; }
   .modal{ background:var(--surface); border-radius:18px; max-width:640px; width:100%; max-height:88vh; overflow-y:auto; position:relative; }
-  .modal-cover{ height:110px; display:flex; align-items:center; padding:0 26px; gap:14px; }
-  .modal-cover .icon{ width:52px; height:52px; border-radius:14px; background:#fff; display:flex; align-items:center; justify-content:center; }
+  .modal-cover{ height:170px; display:flex; align-items:flex-end; padding:0 26px 16px; gap:14px; position:relative; overflow:hidden; }
+  .modal-cover-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+  .modal-cover-gradient{ position:absolute; inset:0; z-index:1; background:linear-gradient(to top, rgba(0,0,0,.65), rgba(0,0,0,.05) 65%); }
+  .modal-cover .icon{ width:52px; height:52px; border-radius:14px; background:#fff; display:flex; align-items:center; justify-content:center; position:relative; z-index:2; flex:none; }
   .modal-cover .icon svg{ width:28px; height:28px; }
-  .modal-cover .titles{ color:#fff; } .modal-cover .titles .sub{ font-size:.78rem; opacity:.9; } .modal-cover .titles h2{ font-size:1.25rem; font-weight:700; }
+  .modal-cover .titles{ color:#fff; position:relative; z-index:2; } .modal-cover .titles .sub{ font-size:.78rem; opacity:.9; } .modal-cover .titles h2{ font-size:1.25rem; font-weight:700; }
   .modal-close{ all:unset; cursor:pointer; position:absolute; top:16px; right:20px; width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.1rem; z-index:3; }
   .modal-body{ padding:24px 26px 28px; display:flex; flex-direction:column; gap:20px; }
   .modal-body .desc{ font-size:.92rem; line-height:1.8; color:var(--ink-soft); }
@@ -364,6 +367,7 @@
       <form id="submitForm">
         <div class="field"><label>ชื่อเกม *</label><input type="text" id="subName" required></div>
         <div class="field"><label>ลิงก์เกม *</label><input type="url" id="subLink" placeholder="https://" required></div>
+        <div class="field"><label>ลิงก์รูปภาพ (ไม่บังคับ ระบบดึงภาพให้อัตโนมัติจากลิงก์เกมอยู่แล้ว)</label><input type="url" id="subImage" placeholder="https://"></div>
         <div class="field-row">
           <div class="field"><label>กลุ่มสาระการเรียนรู้ *</label><select id="submitSubject" required><option value="">เลือกกลุ่มสาระ</option></select></div>
           <div class="field"><label>ระดับชั้น *</label><select id="submitLevel" required><option value="">เลือกระดับชั้น</option></select></div>
@@ -441,6 +445,7 @@
     <form id="editForm" style="padding:20px 26px 26px;">
       <div class="field"><label>ชื่อเกม *</label><input type="text" id="edName" required></div>
       <div class="field"><label>ลิงก์เกม</label><input type="url" id="edLink" placeholder="https://"></div>
+      <div class="field"><label>ลิงก์รูปภาพ (ไม่บังคับ)</label><input type="url" id="edImage" placeholder="https://..."><div class="hint">ระบบดึงภาพหน้าจอเกมให้อัตโนมัติจากลิงก์เกมด้านบนอยู่แล้ว ใส่ตรงนี้เฉพาะถ้าอยากใช้รูปอื่นแทน</div></div>
       <div class="field-row">
         <div class="field"><label>กลุ่มสาระการเรียนรู้ *</label><select id="edSubject" required></select></div>
         <div class="field"><label>ระดับชั้น *</label><select id="edLevel" required></select></div>
@@ -492,6 +497,12 @@ const PLATFORM_URL = { "Wordwall":"https://wordwall.net", "Kahoot":"https://kaho
 const subjById = id => SUBJECTS.find(s => s.id === id) || SUBJECTS[0];
 function iconMarkup(subj, size, stroke){ return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="${stroke}" stroke-width="2">${subj.icon}</svg>`; }
 function gameLink(g){ return (g.link && g.link.trim()) ? g.link.trim() : (PLATFORM_URL[g.platform] || "#"); }
+function coverImageSrc(g){
+  if(g.image && g.image.trim()) return g.image.trim();
+  const link = gameLink(g);
+  if(!link || link === '#') return '';
+  return `https://api.microlink.io/?url=${encodeURIComponent(link)}&screenshot=true&meta=false&embed=screenshot.url`;
+}
 function populateSelect(el, values, placeholder){
   el.innerHTML = (placeholder ? `<option value="">${placeholder}</option>` : "") +
     values.map(v => typeof v === 'string' ? `<option value="${v}">${v}</option>` : `<option value="${v.id}">${v.name}</option>`).join('');
@@ -518,7 +529,7 @@ const configured = () => SUPABASE_URL && !SUPABASE_URL.startsWith('PASTE_') && S
 
 /* ============ DB MAPPING HELPERS ============ */
 function dbToGame(r){
-  return { id:r.id, name:r.name, link:r.link||'', subj:r.subject, level:r.level, platform:r.platform, code:r.code||'', topic:r.topic||'', desc:r.description||'', comps:r.competencies||[], popular:!!r.popular, isNew:!!r.is_new, status:r.status, source:r.source };
+  return { id:r.id, name:r.name, link:r.link||'', image:r.image||'', subj:r.subject, level:r.level, platform:r.platform, code:r.code||'', topic:r.topic||'', desc:r.description||'', comps:r.competencies||[], popular:!!r.popular, isNew:!!r.is_new, status:r.status, source:r.source };
 }
 function dbToResource(r){ return { id:r.id, name:r.name, category:r.category, subj:r.subject, size:r.size||'', link:r.link||'' }; }
 
@@ -579,12 +590,14 @@ document.getElementById('signOutBtn').addEventListener('click', signOutUser);
 function gameCard(g){
   const s = subjById(g.subj);
   const pendingBadge = g.status && g.status !== 'อนุมัติ' ? `<span class="badge-pending">รอตรวจสอบ</span>` : '';
+  const hasImage = coverImageSrc(g);
   return `
   <div class="card" data-id="${g.id}">
     <div class="card-cover" style="--tint:${s.tint};" onclick="openModalById('${g.id}')">
       <div class="badges"><span class="badge" style="--c:${s.color}">${s.name}</span></div>
       ${pendingBadge}
       <div class="icon" style="--c:${s.color}">${iconMarkup(s,22,'#fff')}</div>
+      ${hasImage ? `<img class="cover-img" src="${hasImage}" alt="${g.name}" loading="lazy" onerror="this.style.display='none'">` : ''}
       <div class="card-actions">
         <button class="icon-btn edit" title="แก้ไข" onclick="event.stopPropagation(); openEditGame('${g.id}')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
         <button class="icon-btn danger" title="ลบ" onclick="event.stopPropagation(); deleteGame('${g.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg></button>
@@ -607,7 +620,19 @@ function openModalById(id){ openModal(findGame(id)); }
 function openModal(g){
   if(!g) return;
   const s = subjById(g.subj);
-  document.getElementById('modalCover').style.background = s.color;
+  const cover = document.getElementById('modalCover');
+  cover.querySelectorAll('img.modal-cover-img, .modal-cover-gradient').forEach(el => el.remove());
+  const hasImage = coverImageSrc(g);
+  if(hasImage){
+    cover.style.background = '#111';
+    const img = document.createElement('img');
+    img.className = 'modal-cover-img'; img.src = hasImage; img.alt = g.name;
+    img.onerror = () => { img.remove(); grad.remove(); cover.style.background = s.color; };
+    const grad = document.createElement('div'); grad.className = 'modal-cover-gradient';
+    cover.prepend(grad); cover.prepend(img);
+  } else {
+    cover.style.background = s.color;
+  }
   document.getElementById('modalIcon').innerHTML = iconMarkup(s,26,s.color);
   document.getElementById('modalSubject').textContent = s.name;
   document.getElementById('modalName').textContent = g.name;
@@ -651,6 +676,7 @@ function openEditGame(id){
   document.getElementById('editModalTitle').textContent = 'แก้ไขข้อมูลเกม';
   document.getElementById('edName').value = g.name;
   document.getElementById('edLink').value = g.link||'';
+  document.getElementById('edImage').value = g.image||'';
   document.getElementById('edSubject').value = g.subj;
   document.getElementById('edLevel').value = g.level;
   document.getElementById('edPlatform').value = g.platform;
@@ -674,6 +700,7 @@ document.getElementById('editForm').addEventListener('submit', async e => {
   const payload = {
     name: document.getElementById('edName').value.trim(),
     link: document.getElementById('edLink').value.trim(),
+    image: document.getElementById('edImage').value.trim(),
     subject: document.getElementById('edSubject').value,
     level: document.getElementById('edLevel').value,
     platform: document.getElementById('edPlatform').value,
@@ -816,6 +843,7 @@ document.getElementById('submitForm').addEventListener('submit', async e => {
   const payload = {
     name: document.getElementById('subName').value.trim(),
     link: document.getElementById('subLink').value.trim(),
+    image: document.getElementById('subImage').value.trim(),
     subject: document.getElementById('submitSubject').value,
     level: document.getElementById('submitLevel').value,
     platform: document.getElementById('submitPlatform').value,
