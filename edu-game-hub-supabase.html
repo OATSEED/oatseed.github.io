@@ -407,6 +407,7 @@
         </div>
         <div class="field"><label>สาระสำคัญ/หัวข้อบทเรียน</label><input type="text" id="subTopic"></div>
         <div class="field"><label>คำอธิบายสั้น ๆ</label><textarea rows="3" id="subDesc"></textarea></div>
+        <div class="field"><label>ชื่อผู้แนะนำ (ไม่บังคับ)</label><input type="text" id="subBy" placeholder="เช่น ครูสมศักดิ์ โรงเรียน..."><div class="hint">ถ้าใส่ไว้ ชื่อคุณจะแสดงเป็นเครดิตผู้แนะนำเกมนี้บนหน้าเว็บ</div></div>
         <button type="submit" class="submit-btn" id="submitBtn">ส่งข้อมูล</button>
         <div class="toast" id="submitToast"></div>
       </form>
@@ -458,7 +459,7 @@
     <div class="manage-table-wrap">
       <table class="manage-table">
         <thead><tr>
-          <th>ชื่อเกม</th><th>กลุ่มสาระ</th><th>ระดับชั้น</th><th>แพลตฟอร์ม</th><th>รหัสตัวชี้วัด</th><th>สถานะ</th><th>แท็ก</th><th>จัดการ</th>
+          <th>ชื่อเกม</th><th>กลุ่มสาระ</th><th>ระดับชั้น</th><th>แพลตฟอร์ม</th><th>รหัสตัวชี้วัด</th><th>ผู้แนะนำ</th><th>สถานะ</th><th>แท็ก</th><th>จัดการ</th>
         </tr></thead>
         <tbody id="manageTableBody"></tbody>
       </table>
@@ -478,6 +479,7 @@
     </div>
     <div class="modal-body">
       <p class="desc" id="modalDesc"></p>
+      <p id="modalCredit" style="font-size:.8rem;color:var(--ink-soft);margin-top:-14px;"></p>
       <div class="info-grid">
         <div class="info-item"><div class="lab">รหัสตัวชี้วัด</div><div class="val" id="modalCode"></div></div>
         <div class="info-item"><div class="lab">ระดับชั้น</div><div class="val" id="modalLevel"></div></div>
@@ -522,6 +524,7 @@
       </div>
       <div class="field"><label>สาระสำคัญ / หัวข้อบทเรียน</label><input type="text" id="edTopic"></div>
       <div class="field"><label>คำอธิบายสั้น ๆ</label><textarea rows="3" id="edDesc"></textarea></div>
+      <div class="field"><label>ชื่อผู้แนะนำ (เครดิต, ไม่บังคับ)</label><input type="text" id="edSubmittedBy" placeholder="เช่น ครูสมศักดิ์ โรงเรียน..."></div>
       <div class="field"><label>สมรรถนะสำคัญของผู้เรียน</label><div class="checkbox-row" id="edComps"></div></div>
       <div class="field"><div class="toggle-row">
         <label><input type="checkbox" id="edPopular"> แสดงในหมวด "เกมยอดนิยม"</label>
@@ -604,7 +607,7 @@ const configured = () => SUPABASE_URL && !SUPABASE_URL.startsWith('PASTE_') && S
 
 /* ============ DB MAPPING HELPERS ============ */
 function dbToGame(r){
-  return { id:r.id, name:r.name, link:r.link||'', image:r.image||'', subj:r.subject, level:r.level, platform:r.platform, code:r.code||'', topic:r.topic||'', desc:r.description||'', comps:r.competencies||[], popular:!!r.popular, isNew:!!r.is_new, status:r.status, source:r.source };
+  return { id:r.id, name:r.name, link:r.link||'', image:r.image||'', subj:r.subject, level:r.level, platform:r.platform, code:r.code||'', topic:r.topic||'', desc:r.description||'', comps:r.competencies||[], popular:!!r.popular, isNew:!!r.is_new, status:r.status, source:r.source, submittedBy:r.submitted_by||'' };
 }
 function dbToResource(r){ return { id:r.id, name:r.name, category:r.category, subj:r.subject, size:r.size||'', link:r.link||'' }; }
 
@@ -713,6 +716,7 @@ function gameCard(g){
     </div>
     <div class="card-body" onclick="openModalById('${g.id}')">
       <h3>${g.name}</h3><p class="desc">${g.desc || ''}</p>
+      ${g.submittedBy ? `<p style="font-size:.72rem;color:var(--ink-soft);margin-top:-4px;">🙋 แนะนำโดย ${g.submittedBy}</p>` : ''}
       <div class="card-meta"><span class="code" style="--c:${s.color};--tint:${s.tint}">${g.code || '—'}</span><span>${g.level.split(' ')[0]}</span></div>
     </div>
     <div class="card-foot">
@@ -745,6 +749,8 @@ function openModal(g){
   document.getElementById('modalSubject').textContent = s.name;
   document.getElementById('modalName').textContent = g.name;
   document.getElementById('modalDesc').textContent = g.desc || '(ยังไม่มีคำอธิบาย)';
+  const creditEl = document.getElementById('modalCredit');
+  if(creditEl){ creditEl.textContent = g.submittedBy ? `🙋 แนะนำโดย ${g.submittedBy}` : ''; creditEl.style.display = g.submittedBy ? 'block' : 'none'; }
   document.getElementById('modalCode').textContent = g.code || '—';
   document.getElementById('modalLevel').textContent = g.level;
   document.getElementById('modalTopic').textContent = g.topic || '—';
@@ -794,6 +800,7 @@ function openEditGame(id){
   document.getElementById('edCode').value = g.code||'';
   document.getElementById('edTopic').value = g.topic||'';
   document.getElementById('edDesc').value = g.desc||'';
+  document.getElementById('edSubmittedBy').value = g.submittedBy||'';
   document.querySelectorAll('.edCompChk').forEach(c=>c.checked=(g.comps||[]).includes(Number(c.value)));
   document.getElementById('edPopular').checked = !!g.popular;
   document.getElementById('edNew').checked = !!g.isNew;
@@ -836,6 +843,7 @@ document.getElementById('editForm').addEventListener('submit', async e => {
     code: document.getElementById('edCode').value.trim(),
     topic: document.getElementById('edTopic').value.trim(),
     description: document.getElementById('edDesc').value.trim(),
+    submitted_by: document.getElementById('edSubmittedBy').value.trim(),
     competencies: comps,
     popular: document.getElementById('edPopular').checked,
     is_new: document.getElementById('edNew').checked
@@ -881,7 +889,7 @@ function renderManageTable(){
   const q = (document.getElementById('manageSearch')?.value || '').trim().toLowerCase();
   let list = GAMES.slice();
   if(q) list = list.filter(g => (g.name||'').toLowerCase().includes(q) || (g.code||'').toLowerCase().includes(q));
-  if(!list.length){ body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--ink-soft);padding:30px;">ไม่พบเกมที่ตรงกับคำค้นหา</td></tr>`; return; }
+  if(!list.length){ body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--ink-soft);padding:30px;">ไม่พบเกมที่ตรงกับคำค้นหา</td></tr>`; return; }
   body.innerHTML = list.map(g => {
     const s = subjById(g.subj);
     const approved = g.status === 'อนุมัติ';
@@ -892,6 +900,7 @@ function renderManageTable(){
       <td>${g.level}</td>
       <td>${g.platform}</td>
       <td>${g.code || '—'}</td>
+      <td>${g.submittedBy || '—'}</td>
       <td><span class="manage-badge ${approved?'approved':'pending'}">${approved?'อนุมัติแล้ว':'รอตรวจสอบ'}</span></td>
       <td>${tags}</td>
       <td><div class="manage-actions">
@@ -1029,6 +1038,7 @@ document.getElementById('submitForm').addEventListener('submit', async e => {
     code: document.getElementById('subCode').value.trim(),
     topic: document.getElementById('subTopic').value.trim(),
     description: document.getElementById('subDesc').value.trim(),
+    submitted_by: document.getElementById('subBy').value.trim(),
     status: 'รอตรวจสอบ', source: 'submitted', popular:false, is_new:true
   };
   const toast = document.getElementById('submitToast');
