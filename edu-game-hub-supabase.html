@@ -49,8 +49,11 @@
   body.is-admin #signInBtn{ display:none; }
   .admin-only{ display:none; }
   body.is-admin .admin-only{ display:inherit; }
-  body.is-admin .admin-only-flex{ display:none; }
-  body.is-admin .admin-only-flex.admin-only{ display:flex; }
+  .nav-links button.admin-only{ display:none; }
+  body.is-admin .nav-links button.admin-only{ display:inline-block; }
+  .admin-link.admin-only{ display:none; }
+  body.is-admin .admin-link.admin-only{ display:block; }
+  body.is-admin button.admin-only-flex{ display:none; }
 
   main{ max-width:1320px; margin:0 auto; padding:0 24px 80px; }
   .page{ display:none; animation:fadeUp .35s ease; }
