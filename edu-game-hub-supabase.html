@@ -224,9 +224,9 @@
   ตั้งค่า 3 บรรทัดนี้ให้เป็นของคุณเอง (ดูวิธีทำใน SETUP_GUIDE_SUPABASE.txt)
 ======================================================================= -->
 <script>
-  const SUPABASE_URL      = "https://vipkgybjlzoospfsdiod.supabase.co";   // เช่น https://xxxxx.supabase.co
+  const SUPABASE_URL      = "https://vipkgybjlzoospfsdiod.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpcGtneWJqbHpvb3NwZnNkaW9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2MjM0MDAsImV4cCI6MjEwMDE5OTQwMH0.ApJX6ua488mMVncqeCTZHYu94dU6KrfDq77pZtxOdpY";
-  const ADMIN_LINK_URL    = "https://supabase.com/dashboard/project/vipkgybjlzoospfsdiod/editor/17625?schema=public"; // ปุ่มลัดเปิด Table Editor
+  const ADMIN_LINK_URL    = "https://supabase.com/dashboard/project/vipkgybjlzoospfsdiod/editor/17625?schema=public";
 </script>
 
 <nav class="navbar">
@@ -246,6 +246,7 @@
       <button data-nav="resources">คลังสื่อ &amp; แผนการสอน</button>
       <button data-nav="submit">ส่ง/แนะนำเกม <span class="nav-badge admin-only" id="pendingBadge" style="display:none;">0</span></button>
       <button data-nav="about">เกี่ยวกับเรา</button>
+      <button data-nav="settings" class="admin-only" style="display:none;">ตั้งค่าเว็บไซต์</button>
       <div class="auth-area">
         <button class="signin-btn" id="signInBtn">
           <svg class="g-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4C29.6 36.3 27 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 40.6 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.6 5.4C41.5 36 45 30.5 45 24c0-1.4-.1-2.7-1.4-3.5z"/></svg>
@@ -270,7 +271,7 @@
       <div>
         <span class="eyebrow">อ้างอิงหลักสูตรแกนกลางการศึกษาขั้นพื้นฐาน</span>
         <h1>ค้นเกมให้ตรงตัวชี้วัด<br>ใน <span>คลิกเดียว</span></h1>
-        <p class="lede">ศูนย์รวมเกมการศึกษาออนไลน์ จัดหมวดตาม 8 กลุ่มสาระการเรียนรู้ พร้อมรหัสตัวชี้วัดและข้อความอ้างอิงที่คัดลอกไปใส่แผนการสอนได้ทันที ข้อมูลเก็บบน Supabase (ฐานข้อมูลจริง) แอดมินล็อกอินด้วยบัญชี Google เพื่อแก้ไขข้อมูลผ่านเว็บได้แบบเรียลไทม์</p>
+        <p class="lede" id="heroLedeText">ศูนย์รวมเกมการศึกษาออนไลน์ จัดหมวดตาม 8 กลุ่มสาระการเรียนรู้ พร้อมรหัสตัวชี้วัดและข้อความอ้างอิงที่คัดลอกไปใส่แผนการสอนได้ทันที ข้อมูลเก็บบน Supabase (ฐานข้อมูลจริง) แอดมินล็อกอินด้วยบัญชี Google เพื่อแก้ไขข้อมูลผ่านเว็บได้แบบเรียลไทม์</p>
         <div class="searchbar">
           <input id="heroSearch" type="text" placeholder="ค้นหาชื่อเกม เช่น &quot;เศษส่วน&quot; หรือรหัสตัวชี้วัด เช่น &quot;ค 1.1 ป.4&quot;">
           <button id="heroSearchBtn">
@@ -398,7 +399,7 @@
   <section class="page" id="page-about">
     <div class="about-hero">
       <h1>เกี่ยวกับโครงการ</h1>
-      <p>"คลังเกมการศึกษาอ้างอิงหลักสูตรแกนกลาง" ช่วยให้ครู ผู้ปกครอง และนักเรียน ค้นหาสื่อเกมออนไลน์ที่สอดคล้องกับตัวชี้วัดของหลักสูตรแกนกลางได้ง่ายและรวดเร็ว ข้อมูลเก็บบนฐานข้อมูล Supabase แก้ไขได้จริงผ่านเว็บโดยแอดมินที่ล็อกอินด้วยบัญชี Google ที่ได้รับอนุญาตเท่านั้น</p>
+      <p id="aboutText">"คลังเกมการศึกษาอ้างอิงหลักสูตรแกนกลาง" ช่วยให้ครู ผู้ปกครอง และนักเรียน ค้นหาสื่อเกมออนไลน์ที่สอดคล้องกับตัวชี้วัดของหลักสูตรแกนกลางได้ง่ายและรวดเร็ว ข้อมูลเก็บบนฐานข้อมูล Supabase แก้ไขได้จริงผ่านเว็บโดยแอดมินที่ล็อกอินด้วยบัญชี Google ที่ได้รับอนุญาตเท่านั้น</p>
     </div>
     <div class="about-grid">
       <div class="about-card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 19V5a2 2 0 012-2h13v18H6a2 2 0 01-2-2z"/><path d="M8 7h8M8 11h8"/></svg></div><h4>อ้างอิงหลักสูตรจริง</h4><p>ทุกเกมระบุรหัสตัวชี้วัดและสมรรถนะสำคัญ พร้อมข้อความอ้างอิงสำหรับแนบในแผนการสอน</p></div>
@@ -407,13 +408,22 @@
     </div>
     <div class="block-head" style="margin-top:10px;"><h2>ติดต่อผู้พัฒนา</h2></div>
     <div class="contact-card">
-      <div class="contact-row"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 4l8 8 8-8"/></svg></div> teacher.gamehub@example.ac.th</div>
-      <div class="contact-row"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20"/></svg></div> เพจ Facebook: คลังเกมการศึกษา</div>
+      <div class="contact-row"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 4l8 8 8-8"/></svg></div> <span id="contactEmailText">teacher.gamehub@example.ac.th</span></div>
+      <div class="contact-row"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20"/></svg></div> <span id="contactFacebookText">เพจ Facebook: คลังเกมการศึกษา</span></div>
     </div>
   </section>
 
+  <!-- ================= SETTINGS (แอดมินเท่านั้น) ================= -->
+  <section class="page" id="page-settings">
+    <div class="about-hero" style="max-width:100%;">
+      <h1 style="font-size:1.7rem;">ตั้งค่าเว็บไซต์</h1>
+      <p>แก้ข้อความหน้าแรก/เกี่ยวกับเรา/ติดต่อ ที่แสดงบนเว็บนี้ได้จากตรงนี้เลย ไม่ต้องแก้ไฟล์</p>
+    </div>
+    <div class="form-card" id="settingsFormBox" style="max-width:680px;"></div>
+  </section>
+
 </main>
-<footer>© 2569 คลังเกมการศึกษาอ้างอิงหลักสูตรแกนกลาง — ขับเคลื่อนด้วย Supabase</footer>
+<footer id="footerText">© 2569 คลังเกมการศึกษาอ้างอิงหลักสูตรแกนกลาง — ขับเคลื่อนด้วย Supabase</footer>
 
 <!-- Detail modal -->
 <div class="modal-overlay" id="modalOverlay">
@@ -536,6 +546,14 @@ const SEED_RESOURCES = [
 let GAMES = [];
 let RESOURCES = [];
 let INDICATORS = [];
+let SETTINGS = {};
+const SETTINGS_FIELDS = [
+  { key:'hero_lede', label:'ข้อความคำโปรยหน้าแรก (ใต้หัวข้อใหญ่)', type:'textarea' },
+  { key:'about_text', label:'ข้อความหน้า "เกี่ยวกับเรา"', type:'textarea' },
+  { key:'contact_email', label:'อีเมลติดต่อ', type:'text' },
+  { key:'contact_facebook', label:'ข้อความเพจ Facebook', type:'text' },
+  { key:'footer_text', label:'ข้อความท้ายเว็บ (Footer)', type:'text' }
+];
 let usingLiveData = false;
 let isAdmin = false;
 let sb = null;
@@ -551,21 +569,52 @@ function dbToResource(r){ return { id:r.id, name:r.name, category:r.category, su
 async function loadAll(){
   if(!configured()){ GAMES = SEED_GAMES; RESOURCES = SEED_RESOURCES; INDICATORS = []; usingLiveData = false; return; }
   try{
-    const [gRes, rRes, iRes] = await Promise.all([
+    const [gRes, rRes, iRes, sRes] = await Promise.all([
       sb.from('games').select('*').order('created_at', { ascending:false }),
       sb.from('resources').select('*').order('created_at', { ascending:false }),
-      sb.from('indicators').select('*').order('code', { ascending:true })
+      sb.from('indicators').select('*').order('code', { ascending:true }),
+      sb.from('site_settings').select('*')
     ]);
     if(gRes.error) throw gRes.error;
     if(rRes.error) throw rRes.error;
     GAMES = gRes.data.map(dbToGame);
     RESOURCES = rRes.data.map(dbToResource);
     INDICATORS = iRes.error ? [] : iRes.data;
+    if(!sRes.error){ SETTINGS = {}; sRes.data.forEach(r => SETTINGS[r.key] = r.value); }
     usingLiveData = true;
   }catch(e){
     console.warn('โหลดจาก Supabase ไม่สำเร็จ ใช้ข้อมูลตัวอย่างแทน', e);
     GAMES = SEED_GAMES; RESOURCES = SEED_RESOURCES; INDICATORS = []; usingLiveData = false;
   }
+}
+function applySettings(){
+  const map = { hero_lede:'heroLedeText', about_text:'aboutText', contact_email:'contactEmailText', contact_facebook:'contactFacebookText', footer_text:'footerText' };
+  Object.entries(map).forEach(([key, id]) => {
+    if(SETTINGS[key] !== undefined && SETTINGS[key] !== null && SETTINGS[key] !== ''){
+      const el = document.getElementById(id);
+      if(el) el.textContent = SETTINGS[key];
+    }
+  });
+}
+function renderSettingsForm(){
+  const box = document.getElementById('settingsFormBox');
+  box.innerHTML = SETTINGS_FIELDS.map(f => {
+    const val = (SETTINGS[f.key] || '').replace(/"/g,'&quot;');
+    return `<div class="field"><label>${f.label}</label>${f.type==='textarea' ? `<textarea rows="3" data-key="${f.key}">${SETTINGS[f.key]||''}</textarea>` : `<input type="text" data-key="${f.key}" value="${val}">`}</div>`;
+  }).join('') + `<button type="button" class="submit-btn" id="saveSettingsBtn">บันทึกการตั้งค่า</button><div class="toast" id="settingsToast"></div>`;
+  document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+}
+async function saveSettings(){
+  const toast = document.getElementById('settingsToast');
+  const inputs = document.querySelectorAll('#settingsFormBox [data-key]');
+  for(const el of inputs){
+    const { error } = await sb.from('site_settings').upsert({ key: el.dataset.key, value: el.value });
+    if(error){ toast.className='toast show error'; toast.textContent='บันทึกไม่สำเร็จ: '+error.message; return; }
+    SETTINGS[el.dataset.key] = el.value;
+  }
+  applySettings();
+  toast.className='toast show'; toast.textContent='✅ บันทึกสำเร็จ เว็บอัปเดตข้อความให้แล้ว';
+  setTimeout(()=>toast.classList.remove('show'), 3000);
 }
 async function manualRefresh(){ await loadAll(); refreshAll(); }
 
@@ -960,7 +1009,7 @@ document.getElementById('heroSearchBtn').addEventListener('click', () => { navig
 document.getElementById('heroSearch').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('heroSearchBtn').click(); });
 
 /* ============ INIT ============ */
-function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResources(); renderPendingQueue(); refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel'); }
+function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResources(); renderPendingQueue(); refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel'); applySettings(); renderSettingsForm(); }
 (async function init(){
   initFilters(); initEditFormOptions();
   if(configured()){
