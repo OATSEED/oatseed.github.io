@@ -403,6 +403,7 @@
         <input type="text" id="newCatName" placeholder="ชื่อหมวดหมู่ใหม่ เช่น ใบงาน" style="flex:1;max-width:280px;padding:9px 12px;border-radius:8px;border:1px solid var(--line);font-family:'Kanit';font-size:.85rem;background:var(--surface);">
         <button class="res-add-btn" id="addCatBtn">+ เพิ่มหมวดหมู่</button>
       </div>
+      <div id="catManageBox" style="margin-bottom:16px;"></div>
     </div>
     <div class="res-add-card admin-only">
       <h4>+ เพิ่มไฟล์ในหมวดนี้ (แอดมิน)</h4>
@@ -1108,7 +1109,69 @@ document.getElementById('addCatBtn')?.addEventListener('click', async () => {
   currentResTab = name;
   renderResourceTabs();
   renderResources();
+  renderCategoryManager();
 });
+async function renameCategory(cat, newName){
+  newName = newName.trim();
+  if(!newName || newName === cat.name){ renderCategoryManager(); return; }
+  if(CATEGORIES.some(c => c.name === newName && c.id !== cat.id)){ alert('มีชื่อหมวดหมู่นี้อยู่แล้ว'); renderCategoryManager(); return; }
+  const { error:e1 } = await sb.from('resource_categories').update({ name:newName }).eq('id', cat.id);
+  if(e1){ alert('แก้ไขชื่อไม่สำเร็จ: '+e1.message); return; }
+  const { error:e2 } = await sb.from('resources').update({ category:newName }).eq('category', cat.name);
+  if(e2) alert('เปลี่ยนชื่อหมวดสำเร็จ แต่ปรับไฟล์ในหมวดเดิมไม่ครบ: '+e2.message);
+  if(currentResTab === cat.name) currentResTab = newName;
+  await loadAll();
+  renderResourceTabs(); renderResources(); renderCategoryManager();
+}
+async function moveCategory(cat, dir){
+  const sorted = CATEGORIES.slice().sort((a,b) => a.sort_order - b.sort_order);
+  const idx = sorted.findIndex(c => c.id === cat.id);
+  const swapIdx = idx + dir;
+  if(swapIdx < 0 || swapIdx >= sorted.length) return;
+  const other = sorted[swapIdx];
+  const a = cat.sort_order, b = other.sort_order;
+  await sb.from('resource_categories').update({ sort_order:b }).eq('id', cat.id);
+  await sb.from('resource_categories').update({ sort_order:a }).eq('id', other.id);
+  await loadAll();
+  renderResourceTabs(); renderResources(); renderCategoryManager();
+}
+async function deleteCategoryUI(cat){
+  const inUse = RESOURCES.filter(r => r.category === cat.name).length;
+  if(inUse){ alert(`ยังมีไฟล์ ${inUse} รายการอยู่ในหมวดนี้ ต้องย้ายหรือลบไฟล์เหล่านั้นออกก่อนถึงจะลบหมวดหมู่นี้ได้`); return; }
+  if(!confirm(`ลบหมวดหมู่ "${cat.name}"?`)) return;
+  const { error } = await sb.from('resource_categories').delete().eq('id', cat.id);
+  if(error){ alert('ลบไม่สำเร็จ: '+error.message); return; }
+  await loadAll();
+  renderResourceTabs(); renderResources(); renderCategoryManager();
+}
+function renderCategoryManager(){
+  const box = document.getElementById('catManageBox');
+  if(!box) return;
+  const sorted = CATEGORIES.slice().sort((a,b) => a.sort_order - b.sort_order);
+  if(!sorted.length){ box.innerHTML = ''; return; }
+  box.innerHTML = `<div style="font-size:.8rem;font-weight:600;color:var(--ink-soft);margin:4px 0 8px;">จัดการหมวดหมู่ (แก้ชื่อ / ย้ายลำดับ / ลบ)</div>` +
+    sorted.map((c,i) => `
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;flex-wrap:wrap;">
+      <input type="text" value="${c.name.replace(/"/g,'&quot;')}" data-id="${c.id}" class="catRenameInput" style="flex:1;min-width:140px;padding:6px 9px;border-radius:6px;border:1px solid var(--line);font-family:'Kanit';font-size:.83rem;">
+      <button class="mini-action editlink" data-id="${c.id}" data-action="save">บันทึกชื่อ</button>
+      <button class="mini-action" style="background:#F0F1F5;color:var(--ink);" data-id="${c.id}" data-dir="-1" ${i===0?'disabled':''}>▲ ขึ้น</button>
+      <button class="mini-action" style="background:#F0F1F5;color:var(--ink);" data-id="${c.id}" data-dir="1" ${i===sorted.length-1?'disabled':''}>▼ ลง</button>
+      <button class="mini-action remove" data-id="${c.id}" data-action="delete">ลบ</button>
+    </div>`).join('');
+  box.querySelectorAll('[data-action="save"]').forEach(btn => btn.addEventListener('click', () => {
+    const cat = CATEGORIES.find(c => c.id === btn.dataset.id);
+    const input = box.querySelector(`.catRenameInput[data-id="${btn.dataset.id}"]`);
+    renameCategory(cat, input.value);
+  }));
+  box.querySelectorAll('[data-dir]').forEach(btn => btn.addEventListener('click', () => {
+    const cat = CATEGORIES.find(c => c.id === btn.dataset.id);
+    moveCategory(cat, Number(btn.dataset.dir));
+  }));
+  box.querySelectorAll('[data-action="delete"]').forEach(btn => btn.addEventListener('click', () => {
+    const cat = CATEGORIES.find(c => c.id === btn.dataset.id);
+    deleteCategoryUI(cat);
+  }));
+}
 function renderResources(){
   const list = RESOURCES.filter(r => r.category === currentResTab);
   document.getElementById('resList').innerHTML = list.length ? list.map(r => {
@@ -1208,7 +1271,7 @@ document.getElementById('heroSearchBtn').addEventListener('click', () => { navig
 document.getElementById('heroSearch').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('heroSearchBtn').click(); });
 
 /* ============ INIT ============ */
-function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResourceTabs(); renderResources(); renderPendingQueue(); refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel'); applySettings(); renderSettingsForm(); renderManageTable(); }
+function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResourceTabs(); renderResources(); renderCategoryManager(); renderPendingQueue(); refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel'); applySettings(); renderSettingsForm(); renderManageTable(); }
 (async function init(){
   initFilters(); initEditFormOptions();
   if(configured()){
