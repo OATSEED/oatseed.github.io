@@ -86,6 +86,27 @@
 
   .rail{ display:grid; grid-auto-flow:column; grid-auto-columns:270px; gap:16px; overflow-x:auto; padding-bottom:8px; }
   .rail-empty{ color:var(--ink-soft); font-size:.88rem; padding:20px 0; }
+
+  .carousel{ position:relative; border-radius:var(--radius); overflow:hidden; height:300px; background:var(--ink); }
+  .carousel-track{ display:flex; height:100%; transition:transform .5s ease; }
+  .carousel-slide{ min-width:100%; height:100%; position:relative; display:flex; align-items:flex-end; cursor:pointer; }
+  .carousel-slide img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .carousel-slide .grad{ position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,.05) 60%); }
+  .carousel-slide .info{ position:relative; z-index:2; padding:28px 100px 28px 30px; color:#fff; max-width:640px; }
+  .carousel-slide .info .badge{ background:#fff; }
+  .carousel-slide .info h3{ font-size:1.5rem; font-weight:700; margin:10px 0 8px; }
+  .carousel-slide .info p{ font-size:.9rem; opacity:.92; line-height:1.6; margin-bottom:16px; }
+  .carousel-slide .info a.play{ display:inline-block; padding:10px 22px; border-radius:9px; color:#fff; font-weight:700; font-size:.9rem; text-decoration:none; }
+  .carousel-arrow{ position:absolute; top:50%; transform:translateY(-50%); width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.9); border:none; cursor:pointer; font-size:1.3rem; display:flex; align-items:center; justify-content:center; z-index:3; color:var(--ink); }
+  .carousel-arrow:hover{ background:#fff; }
+  .carousel-arrow.prev{ left:14px; } .carousel-arrow.next{ right:14px; }
+  .carousel-dots{ position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:3; }
+  .carousel-dot{ all:unset; cursor:pointer; width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.5); }
+  .carousel-dot.active{ background:#fff; width:20px; border-radius:5px; }
+  @media (max-width:700px){
+    .carousel{ height:340px; }
+    .carousel-slide .info{ padding:22px 20px; max-width:100%; }
+  }
   .subject-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
   .subject-tile{ all:unset; cursor:pointer; display:flex; flex-direction:column; gap:10px; background:var(--tint,#eee); border-radius:var(--radius); padding:18px; border:1px solid var(--line); }
   .subject-tile .icon{ width:38px; height:38px; border-radius:10px; background:var(--c,#999); display:flex; align-items:center; justify-content:center; }
@@ -313,6 +334,16 @@
         <div class="stat-card"><div class="num" id="statVisits">–</div><div class="lab">ยอดการเข้าชมเว็บ</div></div>
       </div>
     </div>
+
+    <section class="block" id="carouselBlock" style="display:none;">
+      <div class="block-head"><h2>🎬 แนะนำเกมเด่น</h2></div>
+      <div class="carousel" id="carousel">
+        <div class="carousel-track" id="carouselTrack"></div>
+        <button class="carousel-arrow prev" id="carouselPrev" aria-label="ก่อนหน้า">‹</button>
+        <button class="carousel-arrow next" id="carouselNext" aria-label="ถัดไป">›</button>
+        <div class="carousel-dots" id="carouselDots"></div>
+      </div>
+    </section>
 
     <section class="block">
       <div class="block-head"><h2>🔥 เกมยอดนิยม</h2><button class="see-all" data-nav="library">ดูทั้งหมด →</button></div>
@@ -928,6 +959,7 @@ document.getElementById('manageAddBtn')?.addEventListener('click', openAddGame);
 /* ============ HOME / LIBRARY RENDER ============ */
 function visibleGames(){ return GAMES.filter(g => g.status === 'อนุมัติ' || document.body.classList.contains('is-admin')); }
 function renderHome(){
+  renderCarousel();
   const vis = visibleGames();
   document.getElementById('statGames').textContent = GAMES.filter(g=>g.status==='อนุมัติ').length;
   document.getElementById('statPending').textContent = isAdmin ? GAMES.filter(g=>g.status && g.status!=='อนุมัติ').length : '–';
@@ -941,6 +973,52 @@ function renderHome(){
     </button>`).join('');
 }
 function goToLibrary(subjId){ navigate('library'); document.getElementById('fSubject').value = subjId; applyFilters(); }
+
+/* ============ FEATURED GAMES CAROUSEL ============ */
+let carouselIndex = 0;
+let carouselTimer = null;
+function renderCarousel(){
+  const wrap = document.getElementById('carouselBlock');
+  const track = document.getElementById('carouselTrack');
+  const dotsBox = document.getElementById('carouselDots');
+  if(!wrap) return;
+  const vis = visibleGames();
+  let slides = vis.filter(g => g.popular);
+  if(!slides.length) slides = vis.slice(0, 6);
+  if(!slides.length){ wrap.style.display = 'none'; clearInterval(carouselTimer); return; }
+  wrap.style.display = 'block';
+  track.innerHTML = slides.map(g => {
+    const s = subjById(g.subj);
+    const img = coverImageSrc(g);
+    return `<div class="carousel-slide" style="background:${s.color}" onclick="openModalById('${g.id}')">
+      ${img ? `<img src="${img}" alt="${g.name}" onerror="this.style.display='none'">` : ''}
+      <div class="grad"></div>
+      <div class="info">
+        <span class="badge" style="--c:${s.color}">${s.name}</span>
+        <h3>${g.name}</h3>
+        <p>${g.desc || ''}</p>
+        <a href="${gameLink(g)}" target="_blank" rel="noopener noreferrer" class="play" style="background:${s.color}" onclick="event.stopPropagation()">เข้าเล่นเกม ↗</a>
+      </div>
+    </div>`;
+  }).join('');
+  dotsBox.innerHTML = slides.map((_,i) => `<button class="carousel-dot ${i===0?'active':''}" data-i="${i}"></button>`).join('');
+  dotsBox.querySelectorAll('.carousel-dot').forEach(d => d.addEventListener('click', () => { carouselIndex = Number(d.dataset.i); updateCarousel(); resetCarouselTimer(); }));
+  carouselIndex = 0;
+  updateCarousel();
+  resetCarouselTimer();
+}
+function updateCarousel(){
+  const track = document.getElementById('carouselTrack');
+  if(!track) return;
+  const count = track.children.length;
+  if(!count) return;
+  carouselIndex = ((carouselIndex % count) + count) % count;
+  track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+  document.querySelectorAll('#carouselDots .carousel-dot').forEach((d,i) => d.classList.toggle('active', i === carouselIndex));
+}
+function resetCarouselTimer(){ clearInterval(carouselTimer); carouselTimer = setInterval(() => { carouselIndex++; updateCarousel(); }, 4500); }
+document.getElementById('carouselNext')?.addEventListener('click', () => { carouselIndex++; updateCarousel(); resetCarouselTimer(); });
+document.getElementById('carouselPrev')?.addEventListener('click', () => { carouselIndex--; updateCarousel(); resetCarouselTimer(); });
 let currentSort = 'popular';
 function refreshIndicatorPicker(pickerId, subjId, levelId){
   const picker = document.getElementById(pickerId);
