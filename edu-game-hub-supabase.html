@@ -205,6 +205,8 @@
   .res-del{ all:unset; cursor:pointer; width:30px; height:30px; border-radius:8px; display:none; align-items:center; justify-content:center; flex:none; }
   body.is-admin .res-del{ display:flex; }
   .res-del svg{ width:14px; height:14px; stroke:var(--ink-soft); fill:none; stroke-width:2.2; } .res-del:hover svg{ stroke:var(--danger); }
+  .res-move{ display:none; padding:7px 9px; border-radius:7px; border:1px solid var(--line); font-family:'Kanit'; font-size:.78rem; background:var(--bg); color:var(--ink-soft); flex:none; }
+  body.is-admin .res-move{ display:inline-block; }
   .status-empty{ text-align:center; padding:30px; color:var(--ink-soft); font-size:.85rem; }
 
   .manage-toolbar{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin:18px 0; flex-wrap:wrap; }
@@ -1086,10 +1088,13 @@ function applyFilters(){
 
 /* ============ RESOURCES ============ */
 let currentResTab = null;
+function categoryNames(){
+  return CATEGORIES.length ? CATEGORIES.map(c => c.name) : ['แบบบันทึกคะแนน','สไลด์ประกอบ','แผนการจัดการเรียนรู้'];
+}
 function renderResourceTabs(){
   const box = document.getElementById('resTabs');
   if(!box) return;
-  const names = CATEGORIES.length ? CATEGORIES.map(c => c.name) : ['แบบบันทึกคะแนน','สไลด์ประกอบ','แผนการจัดการเรียนรู้'];
+  const names = categoryNames();
   if(!currentResTab || !names.includes(currentResTab)) currentResTab = names[0];
   box.innerHTML = names.map(name => `<button class="tab-btn ${name===currentResTab?'active':''}" data-restab="${name}">${name}</button>`).join('');
   box.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
@@ -1174,15 +1179,27 @@ function renderCategoryManager(){
 }
 function renderResources(){
   const list = RESOURCES.filter(r => r.category === currentResTab);
+  const catNames = categoryNames();
   document.getElementById('resList').innerHTML = list.length ? list.map(r => {
     const s = subjById(r.subj); const hasLink = r.link && r.link.trim();
+    const moveOptions = catNames.filter(n => n !== r.category).map(n => `<option value="${n}">${n}</option>`).join('');
     return `<div class="res-item">
       <div class="res-icon" style="background:${s.tint}">${iconMarkup(s,20,s.color)}</div>
       <div class="res-info"><div class="name">${r.name}</div><div class="meta">${s.name} · ${r.size||''}</div></div>
       <button class="res-download" onclick="${hasLink ? `window.open('${r.link}','_blank')` : `alert('ยังไม่มีลิงก์ไฟล์นี้')`}">${hasLink ? 'เปิดไฟล์' : 'ไม่มีลิงก์'}</button>
+      <select class="res-move" onchange="if(this.value) moveResource('${r.id}', this.value); this.selectedIndex=0;">
+        <option value="">ย้ายไปหมวด...</option>
+        ${moveOptions}
+      </select>
       <button class="res-del" title="ลบ" onclick="deleteResource('${r.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg></button>
     </div>`;
   }).join('') : `<div class="status-empty">ยังไม่มีไฟล์ในหมวดนี้</div>`;
+}
+async function moveResource(id, newCategory){
+  const { error } = await sb.from('resources').update({ category: newCategory }).eq('id', id);
+  if(error){ alert('ย้ายไม่สำเร็จ: '+error.message); return; }
+  await loadAll();
+  renderResources();
 }
 document.getElementById('resAddBtn').addEventListener('click', async () => {
   const name = document.getElementById('resName').value.trim();
