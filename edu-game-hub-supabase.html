@@ -310,6 +310,7 @@
         <div class="stat-card"><div class="num">4</div><div class="lab">ช่วงชั้น อนุบาล–มัธยม</div></div>
         <div class="stat-card"><div class="num" id="statGames">–</div><div class="lab">เกมที่เผยแพร่แล้ว</div></div>
         <div class="stat-card"><div class="num" id="statPending">–</div><div class="lab">รอตรวจสอบ (แอดมินเท่านั้น)</div></div>
+        <div class="stat-card"><div class="num" id="statVisits">–</div><div class="lab">ยอดการเข้าชมเว็บ</div></div>
       </div>
     </div>
 
@@ -663,6 +664,14 @@ async function saveSettings(){
   applySettings();
   toast.className='toast show'; toast.textContent='✅ บันทึกสำเร็จ เว็บอัปเดตข้อความให้แล้ว';
   setTimeout(()=>toast.classList.remove('show'), 3000);
+}
+async function logAndCountVisits(){
+  if(!configured()) return;
+  try{ await sb.from('site_visits').insert({}); }catch(e){ console.warn('บันทึกการเข้าชมไม่สำเร็จ', e); }
+  try{
+    const { count, error } = await sb.from('site_visits').select('*', { count:'exact', head:true });
+    if(!error && document.getElementById('statVisits')) document.getElementById('statVisits').textContent = count;
+  }catch(e){ console.warn('อ่านยอดเข้าชมไม่สำเร็จ', e); }
 }
 async function manualRefresh(){ await loadAll(); refreshAll(); }
 
@@ -1105,6 +1114,7 @@ function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderR
   await loadAll();
   await refreshAuthUI();
   refreshAll();
+  logAndCountVisits();
   navigate('home');
 })();
 </script>
