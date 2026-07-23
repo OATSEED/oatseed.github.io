@@ -397,10 +397,12 @@
       <h1 style="font-size:1.7rem;">คลังสื่อ &amp; แผนการสอน</h1>
       <p>รวมไฟล์ประกอบการสอนที่จับคู่กับเกมในระบบ วางเป็นลิงก์จาก Google Drive/OneDrive</p>
     </div>
-    <div class="tabs-row" id="resTabs">
-      <button class="tab-btn active" data-restab="แบบบันทึกคะแนน">แบบบันทึกคะแนน</button>
-      <button class="tab-btn" data-restab="สไลด์ประกอบ">สไลด์ประกอบ</button>
-      <button class="tab-btn" data-restab="แผนการจัดการเรียนรู้">แผนการจัดการเรียนรู้</button>
+    <div class="tabs-row" id="resTabs"></div>
+    <div class="admin-only">
+      <div style="display:flex;gap:8px;margin:-10px 0 20px;">
+        <input type="text" id="newCatName" placeholder="ชื่อหมวดหมู่ใหม่ เช่น ใบงาน" style="flex:1;max-width:280px;padding:9px 12px;border-radius:8px;border:1px solid var(--line);font-family:'Kanit';font-size:.85rem;background:var(--surface);">
+        <button class="res-add-btn" id="addCatBtn">+ เพิ่มหมวดหมู่</button>
+      </div>
     </div>
     <div class="res-add-card admin-only">
       <h4>+ เพิ่มไฟล์ในหมวดนี้ (แอดมิน)</h4>
@@ -625,6 +627,7 @@ const SEED_RESOURCES = [
 
 let GAMES = [];
 let RESOURCES = [];
+let CATEGORIES = [];
 let INDICATORS = [];
 let SETTINGS = {};
 const SETTINGS_FIELDS = [
@@ -649,17 +652,19 @@ function dbToResource(r){ return { id:r.id, name:r.name, category:r.category, su
 async function loadAll(){
   if(!configured()){ GAMES = SEED_GAMES; RESOURCES = SEED_RESOURCES; INDICATORS = []; usingLiveData = false; return; }
   try{
-    const [gRes, rRes, iRes, sRes] = await Promise.all([
+    const [gRes, rRes, iRes, sRes, cRes] = await Promise.all([
       sb.from('games').select('*').order('created_at', { ascending:false }),
       sb.from('resources').select('*').order('created_at', { ascending:false }),
       sb.from('indicators').select('*').order('code', { ascending:true }),
-      sb.from('site_settings').select('*')
+      sb.from('site_settings').select('*'),
+      sb.from('resource_categories').select('*').order('sort_order', { ascending:true })
     ]);
     if(gRes.error) throw gRes.error;
     if(rRes.error) throw rRes.error;
     GAMES = gRes.data.map(dbToGame);
     RESOURCES = rRes.data.map(dbToResource);
     INDICATORS = iRes.error ? [] : iRes.data;
+    CATEGORIES = cRes.error ? [] : cRes.data;
     if(!sRes.error){ SETTINGS = {}; sRes.data.forEach(r => SETTINGS[r.key] = r.value); }
     usingLiveData = true;
   }catch(e){
@@ -1079,7 +1084,31 @@ function applyFilters(){
 }
 
 /* ============ RESOURCES ============ */
-let currentResTab = 'แบบบันทึกคะแนน';
+let currentResTab = null;
+function renderResourceTabs(){
+  const box = document.getElementById('resTabs');
+  if(!box) return;
+  const names = CATEGORIES.length ? CATEGORIES.map(c => c.name) : ['แบบบันทึกคะแนน','สไลด์ประกอบ','แผนการจัดการเรียนรู้'];
+  if(!currentResTab || !names.includes(currentResTab)) currentResTab = names[0];
+  box.innerHTML = names.map(name => `<button class="tab-btn ${name===currentResTab?'active':''}" data-restab="${name}">${name}</button>`).join('');
+  box.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
+    box.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); currentResTab = btn.dataset.restab; renderResources();
+  }));
+}
+document.getElementById('addCatBtn')?.addEventListener('click', async () => {
+  const input = document.getElementById('newCatName');
+  const name = input.value.trim();
+  if(!name){ alert('พิมพ์ชื่อหมวดหมู่ก่อนครับ'); return; }
+  if(CATEGORIES.some(c => c.name === name)){ alert('มีหมวดหมู่นี้อยู่แล้ว'); return; }
+  const { error } = await sb.from('resource_categories').insert({ name, sort_order: CATEGORIES.length });
+  if(error){ alert('เพิ่มไม่สำเร็จ: '+error.message); return; }
+  input.value = '';
+  await loadAll();
+  currentResTab = name;
+  renderResourceTabs();
+  renderResources();
+});
 function renderResources(){
   const list = RESOURCES.filter(r => r.category === currentResTab);
   document.getElementById('resList').innerHTML = list.length ? list.map(r => {
@@ -1092,9 +1121,6 @@ function renderResources(){
     </div>`;
   }).join('') : `<div class="status-empty">ยังไม่มีไฟล์ในหมวดนี้</div>`;
 }
-document.querySelectorAll('#resTabs .tab-btn').forEach(btn => btn.addEventListener('click', () => {
-  document.querySelectorAll('#resTabs .tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); currentResTab = btn.dataset.restab; renderResources();
-}));
 document.getElementById('resAddBtn').addEventListener('click', async () => {
   const name = document.getElementById('resName').value.trim();
   if(!name){ alert('กรุณาใส่ชื่อไฟล์'); return; }
@@ -1182,7 +1208,7 @@ document.getElementById('heroSearchBtn').addEventListener('click', () => { navig
 document.getElementById('heroSearch').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('heroSearchBtn').click(); });
 
 /* ============ INIT ============ */
-function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResources(); renderPendingQueue(); refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel'); applySettings(); renderSettingsForm(); renderManageTable(); }
+function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResourceTabs(); renderResources(); renderPendingQueue(); refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel'); applySettings(); renderSettingsForm(); renderManageTable(); }
 (async function init(){
   initFilters(); initEditFormOptions();
   if(configured()){
