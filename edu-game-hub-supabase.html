@@ -579,6 +579,26 @@
   </div>
 </div>
 
+<!-- Edit resource modal -->
+<div class="modal-overlay" id="editResOverlay">
+  <div class="modal">
+    <button class="modal-close" id="editResClose" style="color:var(--ink-soft); background:#F0F1F5;">✕</button>
+    <div class="form-head"><h2>แก้ไขไฟล์</h2></div>
+    <form id="editResForm" style="padding:20px 26px 26px;">
+      <div class="field"><label>ชื่อไฟล์ *</label><input type="text" id="edResName" required></div>
+      <div class="field-row">
+        <div class="field"><label>กลุ่มสาระ</label><select id="edResSubj"></select></div>
+        <div class="field"><label>ประเภทไฟล์/ขนาด</label><input type="text" id="edResSize" placeholder="เช่น PDF · 200 KB"></div>
+      </div>
+      <div class="field"><label>ลิงก์ไฟล์</label><input type="url" id="edResLink" placeholder="https://"></div>
+      <div class="form-actions">
+        <button type="button" class="delete-link" id="edResDeleteBtn">ลบไฟล์นี้</button>
+        <button type="submit" class="submit-btn">บันทึก</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 /* ============ CONFIG ============ */
 const SUBJECTS = [
@@ -1189,6 +1209,7 @@ function renderResources(){
       <div class="res-icon" style="background:${s.tint}">${iconMarkup(s,20,s.color)}</div>
       <div class="res-info"><div class="name">${r.name}</div><div class="meta">${s.name} · ${r.size||''}</div></div>
       <button class="res-download" onclick="${hasLink ? `window.open('${r.link}','_blank')` : `alert('ยังไม่มีลิงก์ไฟล์นี้')`}">${hasLink ? 'เปิดไฟล์' : 'ไม่มีลิงก์'}</button>
+      <button class="res-edit" onclick="openEditResource('${r.id}')">แก้ไข</button>
       <select class="res-move" onchange="if(this.value) moveResource('${r.id}', this.value); this.selectedIndex=0;">
         <option value="">ย้ายไปหมวด...</option>
         ${moveOptions}
@@ -1203,6 +1224,45 @@ async function moveResource(id, newCategory){
   await loadAll();
   renderResources();
 }
+let editingResId = null;
+function openEditResource(id){
+  const r = RESOURCES.find(x => x.id === id); if(!r) return;
+  editingResId = id;
+  populateSelect(document.getElementById('edResSubj'), SUBJECTS, null);
+  document.getElementById('edResName').value = r.name;
+  document.getElementById('edResSubj').value = r.subj;
+  document.getElementById('edResSize').value = r.size || '';
+  document.getElementById('edResLink').value = r.link || '';
+  document.getElementById('editResOverlay').classList.add('active');
+}
+function closeEditResModal(){ document.getElementById('editResOverlay').classList.remove('active'); }
+document.getElementById('editResClose').addEventListener('click', closeEditResModal);
+document.getElementById('editResOverlay').addEventListener('click', e => { if(e.target.id === 'editResOverlay') closeEditResModal(); });
+document.getElementById('editResForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const payload = {
+    name: document.getElementById('edResName').value.trim(),
+    subject: document.getElementById('edResSubj').value,
+    size: document.getElementById('edResSize').value.trim(),
+    link: document.getElementById('edResLink').value.trim()
+  };
+  if(!payload.name){ alert('กรุณากรอกชื่อไฟล์'); return; }
+  const { error } = await sb.from('resources').update(payload).eq('id', editingResId);
+  if(error){ alert('บันทึกไม่สำเร็จ: '+error.message); return; }
+  closeEditResModal();
+  await loadAll();
+  renderResources();
+});
+document.getElementById('edResDeleteBtn').addEventListener('click', async () => {
+  const r = RESOURCES.find(x => x.id === editingResId); if(!r) return;
+  if(confirm(`ลบไฟล์ "${r.name}"?`)){
+    const { error } = await sb.from('resources').delete().eq('id', editingResId);
+    if(error){ alert('ลบไม่สำเร็จ: '+error.message); return; }
+    closeEditResModal();
+    await loadAll();
+    renderResources();
+  }
+});
 document.getElementById('resAddBtn').addEventListener('click', async () => {
   const name = document.getElementById('resName').value.trim();
   if(!name){ alert('กรุณาใส่ชื่อไฟล์'); return; }
