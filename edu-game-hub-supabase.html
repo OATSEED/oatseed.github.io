@@ -385,7 +385,7 @@
     </section>
 
     <section class="block">
-      <div class="block-head"><h2>💬 ความคิดเห็น &amp; ข้อเสนอแนะ</h2></div>
+      <div class="block-head"><h2>💬 ความคิดเห็น &amp; ข้อเสนอแนะ <span id="fbCount" style="font-size:.85rem;font-weight:500;color:var(--ink-soft);"></span></h2></div>
       <div class="feedback-form-card">
         <div class="field"><label>ชื่อของคุณ (ไม่บังคับ)</label><input type="text" id="fbName" placeholder="ไม่ระบุชื่อ"></div>
         <div class="field"><label>ความคิดเห็น/ข้อเสนอแนะ</label><textarea id="fbMessage" rows="3" placeholder="อยากแนะนำอะไรเพิ่มเติมไหมครับ..."></textarea></div>
@@ -1057,10 +1057,16 @@ function goToLibrary(subjId){ navigate('library'); document.getElementById('fSub
 
 /* ============ FEEDBACK / REVIEW BOARD ============ */
 function escapeHtml(str){ return (str||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function formatDateTime(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' }) + ' ' + d.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+}
 let feedbackVisibleCount = 3;
 function renderFeedback(){
   const box = document.getElementById('feedbackList');
   if(!box) return;
+  const countEl = document.getElementById('fbCount');
+  if(countEl) countEl.textContent = FEEDBACK.length ? `(${FEEDBACK.length} ความคิดเห็น)` : '';
   const top = FEEDBACK.filter(f => !f.parent_id).slice().sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
   if(!top.length){ box.innerHTML = `<div class="status-empty">ยังไม่มีความคิดเห็น เป็นคนแรกที่แนะนำได้เลยครับ!</div>`; return; }
   const visible = top.slice(0, feedbackVisibleCount);
@@ -1074,7 +1080,7 @@ function renderFeedback(){
 function feedbackItemHtml(f){
   const replies = FEEDBACK.filter(r => r.parent_id === f.id);
   return `<div class="fb-item">
-    <div class="fb-head"><span class="fb-name">${escapeHtml(f.name || 'ไม่ระบุชื่อ')}</span><span class="fb-time">${new Date(f.created_at).toLocaleDateString('th-TH')}</span></div>
+    <div class="fb-head"><span class="fb-name">${escapeHtml(f.name || 'ไม่ระบุชื่อ')}</span><span class="fb-time">${formatDateTime(f.created_at)}</span></div>
     <p class="fb-msg">${escapeHtml(f.message)}</p>
     <div class="fb-actions">
       <button class="fb-reply-btn" onclick="toggleReplyForm('${f.id}')">ตอบกลับ</button>
@@ -1087,7 +1093,7 @@ function feedbackItemHtml(f){
     </div>
     ${replies.length ? `<div class="fb-replies">${replies.map(r => `
       <div class="fb-item reply">
-        <div class="fb-head"><span class="fb-name">${escapeHtml(r.name || 'ไม่ระบุชื่อ')}</span><span class="fb-time">${new Date(r.created_at).toLocaleDateString('th-TH')}</span></div>
+        <div class="fb-head"><span class="fb-name">${escapeHtml(r.name || 'ไม่ระบุชื่อ')}</span><span class="fb-time">${formatDateTime(r.created_at)}</span></div>
         <p class="fb-msg">${escapeHtml(r.message)}</p>
         <button class="fb-del admin-only" onclick="deleteFeedback('${r.id}')">ลบ</button>
       </div>`).join('')}</div>` : ''}
