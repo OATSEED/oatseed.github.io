@@ -1073,7 +1073,7 @@ function renderFeedback(){
   let html = visible.map(f => feedbackItemHtml(f)).join('');
   const btnRow = [];
   if(top.length > feedbackVisibleCount) btnRow.push(`<button class="fb-loadmore-btn" id="fbLoadMoreBtn">อ่านความคิดเห็นเก่ากว่า (เหลืออีก ${top.length - feedbackVisibleCount})</button>`);
-  if(feedbackVisibleCount > 3) btnRow.push(`<button class="fb-loadmore-btn" id="fbCollapseBtn" style="background:none;color:var(--brand);">ย่อกลับ (แสดงแค่ 3 ล่าสุด)</button>`);
+  if(feedbackVisibleCount > 3) btnRow.push(`<button class="fb-loadmore-btn" id="fbCollapseBtn" style="background:none;color:var(--brand);">ย่อกลับ (แสดงล่าสุด)</button>`);
   if(btnRow.length) html += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">${btnRow.map(b=>`<div style="flex:1;min-width:180px;">${b}</div>`).join('')}</div>`;
   box.innerHTML = html;
   document.getElementById('fbLoadMoreBtn')?.addEventListener('click', () => { feedbackVisibleCount += 5; renderFeedback(); });
