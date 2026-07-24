@@ -153,6 +153,8 @@
   .fb-reply-form input, .fb-reply-form textarea{ padding:8px 11px; border-radius:8px; border:1px solid var(--line); font-family:'Kanit'; font-size:.83rem; background:var(--bg); }
   .fb-reply-form button{ all:unset; cursor:pointer; align-self:flex-start; background:var(--brand); color:#fff; font-weight:600; font-size:.8rem; padding:8px 16px; border-radius:8px; }
   .fb-replies{ margin-top:4px; }
+  .fb-loadmore-btn{ all:unset; cursor:pointer; display:block; width:100%; text-align:center; background:#F0F1F5; color:var(--ink); font-weight:600; font-size:.85rem; padding:11px; border-radius:10px; margin-top:6px; }
+  .fb-loadmore-btn:hover{ background:#E7E9EC; }
   .card-foot{ display:flex; gap:8px; padding:0 16px 16px; }
   .btn{ all:unset; cursor:pointer; text-align:center; font-size:.85rem; font-weight:600; padding:9px 12px; border-radius:9px; flex:1; }
   .btn-primary{ background:var(--c,var(--brand)); color:#fff; } .btn-primary:hover{ filter:brightness(1.06); }
@@ -1055,12 +1057,19 @@ function goToLibrary(subjId){ navigate('library'); document.getElementById('fSub
 
 /* ============ FEEDBACK / REVIEW BOARD ============ */
 function escapeHtml(str){ return (str||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let feedbackVisibleCount = 3;
 function renderFeedback(){
   const box = document.getElementById('feedbackList');
   if(!box) return;
-  const top = FEEDBACK.filter(f => !f.parent_id);
+  const top = FEEDBACK.filter(f => !f.parent_id).slice().sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
   if(!top.length){ box.innerHTML = `<div class="status-empty">ยังไม่มีความคิดเห็น เป็นคนแรกที่แนะนำได้เลยครับ!</div>`; return; }
-  box.innerHTML = top.map(f => feedbackItemHtml(f)).join('');
+  const visible = top.slice(0, feedbackVisibleCount);
+  let html = visible.map(f => feedbackItemHtml(f)).join('');
+  if(top.length > feedbackVisibleCount){
+    html += `<button class="fb-loadmore-btn" id="fbLoadMoreBtn">อ่านความคิดเห็นเก่ากว่า (เหลืออีก ${top.length - feedbackVisibleCount})</button>`;
+  }
+  box.innerHTML = html;
+  document.getElementById('fbLoadMoreBtn')?.addEventListener('click', () => { feedbackVisibleCount += 5; renderFeedback(); });
 }
 function feedbackItemHtml(f){
   const replies = FEEDBACK.filter(r => r.parent_id === f.id);
