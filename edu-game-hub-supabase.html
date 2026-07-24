@@ -378,11 +378,6 @@
       <div class="rail" id="railNew"></div>
     </section>
     <section class="block">
-      <div class="block-head"><h2>💖 เกมยอดฮิต (โหวตโดยผู้ใช้)</h2><button class="see-all" data-nav="library">ดูทั้งหมด →</button></div>
-      <div class="rail" id="railHot"></div>
-    </section>
-
-    <section class="block">
       <div class="block-head"><h2>เลือกตามกลุ่มสาระการเรียนรู้</h2></div>
       <div class="subject-grid" id="subjectGrid"></div>
     </section>
@@ -665,12 +660,13 @@ function gameLink(g){ return (g.link && g.link.trim()) ? g.link.trim() : (PLATFO
 function getLikedIds(){ try{ return JSON.parse(localStorage.getItem('likedGameIds') || '[]'); }catch(e){ return []; } }
 function saveLikedIds(arr){ try{ localStorage.setItem('likedGameIds', JSON.stringify(arr)); }catch(e){} }
 async function likeGame(id){
-  const liked = getLikedIds();
-  if(liked.includes(id)) return;
   if(!configured()){ alert('ยังไม่ได้เชื่อมต่อระบบหลังบ้าน'); return; }
-  const { error } = await sb.rpc('increment_likes', { gid:id });
-  if(error){ alert('กดถูกใจไม่สำเร็จ: '+error.message); return; }
-  liked.push(id); saveLikedIds(liked);
+  const liked = getLikedIds();
+  const isLiked = liked.includes(id);
+  const { error } = await sb.rpc('adjust_likes', { gid:id, delta: isLiked ? -1 : 1 });
+  if(error){ alert('ทำรายการไม่สำเร็จ: '+error.message); return; }
+  const updated = isLiked ? liked.filter(x => x !== id) : [...liked, id];
+  saveLikedIds(updated);
   await loadAll();
   refreshAll();
 }
@@ -840,7 +836,7 @@ function gameCard(g){
       <h3>${g.name}</h3><p class="desc">${g.desc || ''}</p>
       ${g.submittedBy ? `<p style="font-size:.72rem;color:var(--ink-soft);margin-top:-4px;">🙋 แนะนำโดย ${g.submittedBy}</p>` : ''}
       <div class="like-row">
-        <button class="like-btn ${getLikedIds().includes(g.id)?'liked':''}" onclick="event.stopPropagation(); likeGame('${g.id}')" ${getLikedIds().includes(g.id)?'disabled':''}>❤️ ${g.likes||0}</button>
+        <button class="like-btn ${getLikedIds().includes(g.id)?'liked':''}" onclick="event.stopPropagation(); likeGame('${g.id}')">${getLikedIds().includes(g.id)?'❤️':'🤍'} ${g.likes||0}</button>
       </div>
       <div class="card-meta"><span class="code" style="--c:${s.color};--tint:${s.tint}">${g.code || '—'}</span><span>${g.level.split(' ')[0]}</span></div>
     </div>
@@ -1049,9 +1045,6 @@ function renderHome(){
   const pop = vis.filter(g=>g.popular), nw = vis.filter(g=>g.isNew);
   document.getElementById('railPopular').innerHTML = pop.length ? pop.map(gameCard).join('') : `<div class="rail-empty">ยังไม่มีเกมยอดนิยม</div>`;
   document.getElementById('railNew').innerHTML = nw.length ? nw.map(gameCard).join('') : `<div class="rail-empty">ยังไม่มีเกมมาใหม่</div>`;
-  const hot = vis.filter(g => (g.likes||0) > 0).sort((a,b) => (b.likes||0) - (a.likes||0)).slice(0,8);
-  const railHot = document.getElementById('railHot');
-  if(railHot) railHot.innerHTML = hot.length ? hot.map(gameCard).join('') : `<div class="rail-empty">ยังไม่มีเกมที่ถูกกดถูกใจ ลองกดหัวใจ ❤️ บนการ์ดเกมที่ชอบดูสิ!</div>`;
   document.getElementById('subjectGrid').innerHTML = SUBJECTS.map(s => `
     <button class="subject-tile" style="--tint:${s.tint}" onclick="goToLibrary('${s.id}')">
       <div class="icon" style="--c:${s.color}">${iconMarkup(s,20,'#fff')}</div>
