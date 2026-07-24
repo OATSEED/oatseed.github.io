@@ -1071,11 +1071,13 @@ function renderFeedback(){
   if(!top.length){ box.innerHTML = `<div class="status-empty">ยังไม่มีความคิดเห็น เป็นคนแรกที่แนะนำได้เลยครับ!</div>`; return; }
   const visible = top.slice(0, feedbackVisibleCount);
   let html = visible.map(f => feedbackItemHtml(f)).join('');
-  if(top.length > feedbackVisibleCount){
-    html += `<button class="fb-loadmore-btn" id="fbLoadMoreBtn">อ่านความคิดเห็นเก่ากว่า (เหลืออีก ${top.length - feedbackVisibleCount})</button>`;
-  }
+  const btnRow = [];
+  if(top.length > feedbackVisibleCount) btnRow.push(`<button class="fb-loadmore-btn" id="fbLoadMoreBtn">อ่านความคิดเห็นเก่ากว่า (เหลืออีก ${top.length - feedbackVisibleCount})</button>`);
+  if(feedbackVisibleCount > 3) btnRow.push(`<button class="fb-loadmore-btn" id="fbCollapseBtn" style="background:none;color:var(--brand);">ย่อกลับ (แสดงแค่ 3 ล่าสุด)</button>`);
+  if(btnRow.length) html += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">${btnRow.map(b=>`<div style="flex:1;min-width:180px;">${b}</div>`).join('')}</div>`;
   box.innerHTML = html;
   document.getElementById('fbLoadMoreBtn')?.addEventListener('click', () => { feedbackVisibleCount += 5; renderFeedback(); });
+  document.getElementById('fbCollapseBtn')?.addEventListener('click', () => { feedbackVisibleCount = 3; renderFeedback(); document.getElementById('feedbackList').scrollIntoView({behavior:'smooth', block:'nearest'}); });
 }
 function feedbackItemHtml(f){
   const replies = FEEDBACK.filter(r => r.parent_id === f.id);
