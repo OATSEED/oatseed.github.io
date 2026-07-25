@@ -1498,6 +1498,7 @@ function renderPendingQueue(){
 /* ============ SYNC BANNER ============ */
 function renderSyncBanner(){
   const el = document.getElementById('syncBanner');
+  if(!document.body.classList.contains('is-admin')){ el.className='sync-banner'; el.innerHTML=''; return; }
   if(!configured()){
     el.className='sync-banner show'; el.innerHTML = `⚠️ ยังไม่ได้ตั้งค่า Supabase — กำลังแสดง<strong>ข้อมูลตัวอย่าง</strong> ดูวิธีตั้งค่าใน SETUP_GUIDE_SUPABASE.txt`;
   } else if(usingLiveData){
