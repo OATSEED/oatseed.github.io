@@ -346,7 +346,6 @@
       <button data-nav="about">เกี่ยวกับเรา</button>
       <button data-nav="settings" class="admin-only">ตั้งค่าเว็บไซต์</button>
       <button data-nav="manage" class="admin-only">จัดการเกม</button>
-      <button data-nav="stats" class="admin-only">สถิติ</button>
       <div class="auth-area">
         <button class="signin-btn" id="signInBtn">
           <svg class="g-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4C29.6 36.3 27 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 40.6 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.6 5.4C41.5 36 45 30.5 45 24c0-1.4-.1-2.7-1.4-3.5z"/></svg>
@@ -564,32 +563,6 @@
         </tr></thead>
         <tbody id="manageTableBody"></tbody>
       </table>
-    </div>
-  </section>
-
-  <!-- ================= STATS (แอดมินเท่านั้น) ================= -->
-  <section class="page" id="page-stats">
-    <div class="about-hero" style="max-width:100%;">
-      <h1 style="font-size:1.7rem;">สถิติ</h1>
-      <p>ภาพรวมการใช้งานเว็บ ช่วยแอดมินตัดสินใจว่าควรเพิ่ม/ปรับปรุงเกมด้านไหนต่อ</p>
-    </div>
-    <div class="stats-grid">
-      <div class="stats-card">
-        <h4>🔥 เกมที่ถูกใจมากที่สุด</h4>
-        <div id="statsTopGames" class="stats-list"></div>
-      </div>
-      <div class="stats-card">
-        <h4>📚 กลุ่มสาระที่ถูกค้นหา/กรองบ่อยที่สุด</h4>
-        <div id="statsTopSubjects" class="stats-list"></div>
-      </div>
-      <div class="stats-card">
-        <h4>🔎 คำค้นหายอดนิยม</h4>
-        <div id="statsTopSearches" class="stats-list"></div>
-      </div>
-      <div class="stats-card">
-        <h4>🤖 คำถามยอดนิยมที่ถาม AI</h4>
-        <div id="statsTopChats" class="stats-list"></div>
-      </div>
     </div>
   </section>
 
@@ -840,10 +813,6 @@ async function logAndCountVisits(){
     const { count, error } = await sb.from('site_visits').select('*', { count:'exact', head:true });
     if(!error && document.getElementById('statVisits')) document.getElementById('statVisits').textContent = count;
   }catch(e){ console.warn('อ่านยอดเข้าชมไม่สำเร็จ', e); }
-}
-function logAnalyticsEvent(eventType, subject, query){
-  if(!configured() || !sb) return;
-  sb.from('analytics_events').insert({ event_type: eventType, subject, query }).then(() => {});
 }
 async function manualRefresh(){ await loadAll(); refreshAll(); }
 
@@ -1278,16 +1247,7 @@ function initFilters(){
   ['submitSubject','submitLevel'].forEach(id => document.getElementById(id).addEventListener('change', () => refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel')));
   refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel');
   ['fSubject','fLevel','fPlatform'].forEach(id => document.getElementById(id).addEventListener('change', applyFilters));
-  document.getElementById('fSubject').addEventListener('change', function(){ if(this.value) logAnalyticsEvent('search', this.value, null); });
-  let searchLogTimer = null;
-  document.getElementById('fSearch').addEventListener('input', () => {
-    applyFilters();
-    clearTimeout(searchLogTimer);
-    searchLogTimer = setTimeout(() => {
-      const q = document.getElementById('fSearch').value.trim();
-      if(q) logAnalyticsEvent('search', null, q);
-    }, 900);
-  });
+  document.getElementById('fSearch').addEventListener('input', applyFilters);
   document.getElementById('clearFilters').addEventListener('click', () => {
     document.getElementById('fSubject').value=''; document.getElementById('fLevel').value='';
     document.getElementById('fPlatform').value=''; document.getElementById('fSearch').value=''; applyFilters();
