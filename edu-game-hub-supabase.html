@@ -1579,7 +1579,7 @@ async function sendAiChat(){
   if(!sb){ alert('ระบบยังไม่พร้อม ลองใหม่อีกครั้ง'); return; }
   appendChatMessage('user', msg);
   input.value = '';
-  appendChatMessage('ai', 'กำลังคิด...', true);
+  appendChatMessage('ai', 'รอซักครู่นะครับ...', true);
   try{
     const { data, error } = await sb.functions.invoke('game-chat', { body: { message: msg } });
     removeTypingIndicator();
