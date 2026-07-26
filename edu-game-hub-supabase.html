@@ -318,6 +318,16 @@
     .ai-chat-toggle{ right:12px; bottom:12px; }
   }
 
+  .nav-drawer-overlay{ position:fixed; inset:0; background:rgba(20,22,30,.45); z-index:95; display:none; }
+  .nav-drawer-overlay.open{ display:block; }
+  .nav-drawer{ position:fixed; top:0; right:0; height:100vh; width:260px; max-width:80vw; background:var(--surface); z-index:96; box-shadow:-10px 0 30px rgba(0,0,0,.18); transform:translateX(100%); transition:transform .25s ease; display:flex; flex-direction:column; padding:20px; gap:6px; }
+  .nav-drawer.open{ transform:translateX(0); }
+  .nav-drawer-head{ display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:1rem; margin-bottom:12px; padding-bottom:14px; border-bottom:1px solid var(--line); }
+  .nav-drawer-head button{ all:unset; cursor:pointer; font-size:1.2rem; color:var(--ink-soft); line-height:1; padding:2px 6px; }
+  .nav-drawer-link{ all:unset; cursor:pointer; padding:13px 14px; border-radius:9px; font-size:.92rem; font-weight:500; color:var(--ink); }
+  .nav-drawer-link:hover{ background:#F0F1F5; }
+  .nav-drawer-link.active{ background:var(--brand); color:#fff; font-weight:600; }
+
   @media (max-width:900px){
     .hero{ grid-template-columns:1fr; }
     .subject-grid{ grid-template-columns:repeat(2,1fr); }
@@ -356,9 +366,7 @@
       <button data-nav="resources">คลังสื่อ &amp; แผนการสอน</button>
       <button data-nav="submit">ส่ง/แนะนำเกม <span class="nav-badge admin-only" id="pendingBadge" style="display:none;">0</span></button>
       <button data-nav="about">เกี่ยวกับเรา</button>
-      <button data-nav="settings" class="admin-only">ตั้งค่าเว็บไซต์</button>
-      <button data-nav="manage" class="admin-only">จัดการเกม</button>
-      <button data-nav="stats" class="admin-only">สถิติ</button>
+      <button id="adminMenuToggle" class="admin-only">☰ เมนูแอดมิน</button>
       <div class="auth-area">
         <button class="signin-btn" id="signInBtn">
           <svg class="g-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4C29.6 36.3 27 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 40.6 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.6 5.4C41.5 36 45 30.5 45 24c0-1.4-.1-2.7-1.4-3.5z"/></svg>
@@ -373,6 +381,14 @@
     </div>
   </div>
 </nav>
+
+<div class="nav-drawer-overlay" id="navDrawerOverlay"></div>
+<div class="nav-drawer" id="navDrawer">
+  <div class="nav-drawer-head"><span>เมนูแอดมิน</span><button id="navDrawerClose">✕</button></div>
+  <button class="nav-drawer-link" data-nav="settings">⚙️ ตั้งค่าเว็บไซต์</button>
+  <button class="nav-drawer-link" data-nav="manage">🗂️ จัดการเกม</button>
+  <button class="nav-drawer-link" data-nav="stats">📊 สถิติ</button>
+</div>
 
 <main>
 
@@ -1614,9 +1630,16 @@ function navigate(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('.nav-links > button').forEach(b=>b.classList.toggle('active', b.dataset.nav===page));
+  document.querySelectorAll('.nav-drawer-link').forEach(b=>b.classList.toggle('active', b.dataset.nav===page));
   window.scrollTo({top:0, behavior:'smooth'});
 }
 document.querySelectorAll('[data-nav]').forEach(el => el.addEventListener('click', () => navigate(el.dataset.nav)));
+function openNavDrawer(){ document.getElementById('navDrawer').classList.add('open'); document.getElementById('navDrawerOverlay').classList.add('open'); }
+function closeNavDrawer(){ document.getElementById('navDrawer').classList.remove('open'); document.getElementById('navDrawerOverlay').classList.remove('open'); }
+document.getElementById('adminMenuToggle')?.addEventListener('click', openNavDrawer);
+document.getElementById('navDrawerClose')?.addEventListener('click', closeNavDrawer);
+document.getElementById('navDrawerOverlay')?.addEventListener('click', closeNavDrawer);
+document.querySelectorAll('.nav-drawer-link').forEach(btn => btn.addEventListener('click', closeNavDrawer));
 document.getElementById('heroSearchBtn').addEventListener('click', () => { navigate('library'); document.getElementById('fSearch').value = document.getElementById('heroSearch').value; applyFilters(); });
 document.getElementById('heroSearch').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('heroSearchBtn').click(); });
 
