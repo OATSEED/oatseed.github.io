@@ -605,8 +605,19 @@
     </div>
     <div class="stats-grid">
       <div class="stats-card wide">
-        <h4>📈 ยอดเข้าชมเว็บรายวัน (14 วันล่าสุด)</h4>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+          <h4 style="margin-bottom:0;">📈 ยอดเข้าชมเว็บรายวัน</h4>
+          <div class="chip-row" id="visitsRangeChips">
+            <span class="chip" data-days="7">7 วัน</span>
+            <span class="chip active" data-days="14">14 วัน</span>
+            <span class="chip" data-days="30">30 วัน</span>
+          </div>
+        </div>
         <div id="statsVisitsTrend"></div>
+      </div>
+      <div class="stats-card wide">
+        <h4>📊 เปรียบเทียบยอดเข้าชมรายเดือน (12 เดือนล่าสุด)</h4>
+        <div id="statsMonthlyCompare"></div>
       </div>
       <div class="stats-card wide">
         <h4>🕐 ช่วงเวลาที่มีคนใช้งานเว็บมากที่สุด (ตามชั่วโมง)</h4>
@@ -930,23 +941,26 @@ function renderLineChart(containerId, dataPoints){
     c.addEventListener('touchstart', e => showChartTooltip(e.touches[0], c.dataset.label, c.dataset.value));
   });
 }
+let visitsRangeDays = 14;
 async function renderVisitAndHourlyStats(){
   const trendEl = document.getElementById('statsVisitsTrend');
   const hourlyEl = document.getElementById('statsHourly');
+  const monthlyEl = document.getElementById('statsMonthlyCompare');
   if(!trendEl || !hourlyEl) return;
   if(!configured() || !sb){
     trendEl.innerHTML = `<div class="status-empty">ต้องเชื่อมต่อ Supabase ก่อนถึงจะเห็นข้อมูลนี้</div>`;
     hourlyEl.innerHTML = `<div class="status-empty">ต้องเชื่อมต่อ Supabase ก่อนถึงจะเห็นข้อมูลนี้</div>`;
+    if(monthlyEl) monthlyEl.innerHTML = `<div class="status-empty">ต้องเชื่อมต่อ Supabase ก่อนถึงจะเห็นข้อมูลนี้</div>`;
     return;
   }
   try{
-    const { data, error } = await sb.from('site_visits').select('created_at').order('created_at', { ascending:false }).limit(5000);
+    const { data, error } = await sb.from('site_visits').select('created_at').order('created_at', { ascending:false }).limit(15000);
     if(error) throw error;
     const rows = data || [];
 
-    // รายวัน (14 วันล่าสุด)
+    // รายวัน (ตามช่วงที่เลือก)
     const dayCounts = {}; const days = [];
-    for(let i=13; i>=0; i--){ const d = new Date(); d.setDate(d.getDate()-i); const key = d.toISOString().slice(0,10); days.push(key); dayCounts[key] = 0; }
+    for(let i=visitsRangeDays-1; i>=0; i--){ const d = new Date(); d.setDate(d.getDate()-i); const key = d.toISOString().slice(0,10); days.push(key); dayCounts[key] = 0; }
     rows.forEach(r => { const key = (r.created_at||'').slice(0,10); if(dayCounts[key] !== undefined) dayCounts[key]++; });
     renderLineChart('statsVisitsTrend', days.map(k => ({ label:k.slice(5), value:dayCounts[k] })));
 
@@ -959,11 +973,34 @@ async function renderVisitAndHourlyStats(){
       }catch(e){}
     });
     renderLineChart('statsHourly', hourCounts.map((v,h) => ({ label: String(h).padStart(2,'0')+':00', value:v })));
+
+    // เปรียบเทียบรายเดือน (12 เดือนล่าสุด)
+    if(monthlyEl){
+      const monthCounts = {}; const months = [];
+      for(let i=11; i>=0; i--){
+        const d = new Date(); d.setMonth(d.getMonth()-i);
+        const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+        months.push(key); monthCounts[key] = 0;
+      }
+      rows.forEach(r => { const key = (r.created_at||'').slice(0,7); if(monthCounts[key] !== undefined) monthCounts[key]++; });
+      const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+      renderLineChart('statsMonthlyCompare', months.map(k => {
+        const [y,m] = k.split('-');
+        return { label: thMonths[Number(m)-1] + ' ' + (Number(y)+543).toString().slice(-2), value: monthCounts[k] };
+      }));
+    }
   }catch(e){
     trendEl.innerHTML = `<div class="status-empty">โหลดข้อมูลไม่สำเร็จ</div>`;
     hourlyEl.innerHTML = `<div class="status-empty">โหลดข้อมูลไม่สำเร็จ</div>`;
+    if(monthlyEl) monthlyEl.innerHTML = `<div class="status-empty">โหลดข้อมูลไม่สำเร็จ</div>`;
   }
 }
+document.getElementById('visitsRangeChips')?.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => {
+  document.getElementById('visitsRangeChips').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  visitsRangeDays = Number(chip.dataset.days);
+  renderVisitAndHourlyStats();
+}));
 async function renderStatsPage(){
   if(!document.getElementById('page-stats')) return;
   if(!document.body.classList.contains('is-admin')) return;
