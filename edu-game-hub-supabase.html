@@ -267,6 +267,7 @@
   .stats-bar-track{ flex:1; height:6px; background:var(--bg); border-radius:4px; overflow:hidden; margin:0 4px; }
   .stats-bar-fill{ height:100%; background:var(--brand); border-radius:4px; }
   @media (max-width:800px){ .stats-grid{ grid-template-columns:1fr; } }
+  .stats-card.wide{ grid-column:1/-1; }
   .res-add-card{ background:var(--surface); border:1px dashed var(--line); border-radius:12px; padding:16px; margin-bottom:20px; }
   .res-add-card h4{ font-size:.88rem; font-weight:700; margin-bottom:12px; }
   .res-add-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1.4fr auto; gap:10px; align-items:end; }
@@ -602,6 +603,10 @@
       <p>ภาพรวมการใช้งานเว็บ ช่วยแอดมินตัดสินใจว่าควรเพิ่ม/ปรับปรุงเกมด้านไหนต่อ</p>
     </div>
     <div class="stats-grid">
+      <div class="stats-card wide">
+        <h4>📈 ยอดเข้าชมเว็บรายวัน (14 วันล่าสุด)</h4>
+        <div id="statsVisitsTrend"></div>
+      </div>
       <div class="stats-card">
         <h4>🔥 เกมที่ถูกใจมากที่สุด</h4>
         <div id="statsTopGames" class="stats-list"></div>
@@ -873,23 +878,67 @@ function logAnalyticsEvent(eventType, subject, query){
   if(!configured() || !sb) return;
   sb.from('analytics_events').insert({ event_type: eventType, subject, query }).then(() => {});
 }
-function statsBarList(entries, labelFn){
-  if(!entries.length) return `<div class="status-empty">ยังไม่มีข้อมูล</div>`;
-  const max = entries[0][1];
-  return entries.map(([key,count], i) => `
-    <div class="stats-row">
-      <span class="rank">${i+1}</span>
-      <span class="label">${escapeHtml(labelFn(key))}</span>
-      <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${max? Math.max(6,(count/max)*100):0}%"></div></div>
-      <span class="count">${count}</span>
-    </div>`).join('');
+function renderLineChart(containerId, dataPoints){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  if(!dataPoints.length){ el.innerHTML = `<div class="status-empty">ยังไม่มีข้อมูล</div>`; return; }
+  const w = 560, h = 190, padL = 34, padR = 14, padT = 14, padB = 32;
+  const values = dataPoints.map(d => d.value);
+  const maxV = Math.max(...values, 1);
+  const stepX = dataPoints.length > 1 ? (w-padL-padR)/(dataPoints.length-1) : 0;
+  const points = dataPoints.map((d,i) => ({
+    x: padL + stepX*i,
+    y: padT + (h-padT-padB) * (1 - (d.value/maxV)),
+    ...d
+  }));
+  const pathD = points.map((p,i) => (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+  const areaD = pathD + ` L${points[points.length-1].x.toFixed(1)},${h-padB} L${points[0].x.toFixed(1)},${h-padB} Z`;
+  const showEvery = Math.max(1, Math.ceil(dataPoints.length/8));
+  const labels = points.map((p,i) => {
+    if(i % showEvery !== 0 && i !== points.length-1) return '';
+    return `<text x="${p.x}" y="${h-10}" font-size="9" fill="var(--ink-soft)" text-anchor="middle">${escapeHtml(String(p.label).slice(0,10))}</text>`;
+  }).join('');
+  const dots = points.map(p => `<circle cx="${p.x}" cy="${p.y}" r="3.2" fill="var(--brand)"><title>${escapeHtml(String(p.label))}: ${p.value}</title></circle>`).join('');
+  const gridLines = [0,0.5,1].map(f => {
+    const y = padT + (h-padT-padB)*f;
+    const val = Math.round(maxV*(1-f));
+    return `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="2" y="${y+3}" font-size="9" fill="var(--ink-soft)">${val}</text>`;
+  }).join('');
+  el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block;">
+    ${gridLines}
+    <path d="${areaD}" fill="var(--brand)" opacity="0.09"></path>
+    <path d="${pathD}" fill="none" stroke="var(--brand)" stroke-width="2.2"></path>
+    ${dots}
+    ${labels}
+  </svg>`;
+}
+async function renderVisitsTrend(){
+  const el = document.getElementById('statsVisitsTrend');
+  if(!el) return;
+  if(!configured() || !sb){ el.innerHTML = `<div class="status-empty">ต้องเชื่อมต่อ Supabase ก่อนถึงจะเห็นข้อมูลนี้</div>`; return; }
+  try{
+    const { data, error } = await sb.from('site_visits').select('created_at').order('created_at', { ascending:false }).limit(5000);
+    if(error) throw error;
+    const counts = {};
+    const days = [];
+    for(let i=13; i>=0; i--){
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const key = d.toISOString().slice(0,10);
+      days.push(key); counts[key] = 0;
+    }
+    (data || []).forEach(r => { const key = (r.created_at||'').slice(0,10); if(counts[key] !== undefined) counts[key]++; });
+    renderLineChart('statsVisitsTrend', days.map(k => ({ label:k.slice(5), value:counts[k] })));
+  }catch(e){
+    el.innerHTML = `<div class="status-empty">โหลดข้อมูลไม่สำเร็จ</div>`;
+  }
 }
 async function renderStatsPage(){
   if(!document.getElementById('page-stats')) return;
   if(!document.body.classList.contains('is-admin')) return;
 
   const topGames = GAMES.filter(g => (g.likes||0) > 0).sort((a,b) => (b.likes||0)-(a.likes||0)).slice(0,10);
-  document.getElementById('statsTopGames').innerHTML = statsBarList(topGames.map(g => [g.name, g.likes||0]), k=>k);
+  renderLineChart('statsTopGames', topGames.map(g => ({ label:g.name, value:g.likes||0 })));
+  renderVisitsTrend();
 
   if(!configured() || !sb){
     ['statsTopSubjects','statsTopSearches','statsTopChats'].forEach(id => document.getElementById(id).innerHTML = `<div class="status-empty">ต้องเชื่อมต่อ Supabase ก่อนถึงจะเห็นข้อมูลนี้</div>`);
@@ -903,17 +952,17 @@ async function renderStatsPage(){
     const subjCounts = {};
     events.filter(e => e.event_type==='search' && e.subject).forEach(e => { subjCounts[e.subject] = (subjCounts[e.subject]||0)+1; });
     const subjSorted = Object.entries(subjCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    document.getElementById('statsTopSubjects').innerHTML = statsBarList(subjSorted, k => subjById(k).name);
+    renderLineChart('statsTopSubjects', subjSorted.map(([k,v]) => ({ label:subjById(k).name, value:v })));
 
     const searchCounts = {};
     events.filter(e => e.event_type==='search' && e.query).forEach(e => { const k = e.query.trim().toLowerCase(); if(k) searchCounts[k] = (searchCounts[k]||0)+1; });
     const searchSorted = Object.entries(searchCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    document.getElementById('statsTopSearches').innerHTML = statsBarList(searchSorted, k=>k);
+    renderLineChart('statsTopSearches', searchSorted.map(([k,v]) => ({ label:k, value:v })));
 
     const chatCounts = {};
     events.filter(e => e.event_type==='chat_question' && e.query).forEach(e => { const k = e.query.trim().toLowerCase(); if(k) chatCounts[k] = (chatCounts[k]||0)+1; });
     const chatSorted = Object.entries(chatCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    document.getElementById('statsTopChats').innerHTML = statsBarList(chatSorted, k=>k);
+    renderLineChart('statsTopChats', chatSorted.map(([k,v]) => ({ label:k, value:v })));
   }catch(e){
     console.warn('โหลดสถิติไม่สำเร็จ', e);
     ['statsTopSubjects','statsTopSearches','statsTopChats'].forEach(id => document.getElementById(id).innerHTML = `<div class="status-empty">โหลดข้อมูลไม่สำเร็จ</div>`);
