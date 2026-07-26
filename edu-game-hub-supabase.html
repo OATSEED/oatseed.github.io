@@ -11,7 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
-    --bg:#F8F9FA; --surface:#FFFFFF; --line:#E7E9EC; --ink:#1F2430; --ink-soft:#6B7280;
+    --bg:#F8F9FA; --surface:#FFFFFF; --line:var(--chip-bg-hover); --ink:#1F2430; --ink-soft:#6B7280;
     --thai:#E4536B;    --thai-tint:#FCE9EC;
     --math:#F0883E;    --math-tint:#FDEEE1;
     --sci:#2FA66C;     --sci-tint:#E5F5EC;
@@ -21,11 +21,13 @@
     --career:#C99A2E;  --career-tint:#FAF2DE;
     --lang:#3A6FB0;    --lang-tint:#E7EEF6;
     --brand:#3E5CE0; --brand-dark:#2C40A8; --danger:#D9455F; --radius:14px;
+    --chip-bg:var(--chip-bg); --chip-bg-hover:var(--chip-bg-hover); --nav-bg:rgba(255,255,255,.92);
   }
   body.dark-theme{
     --bg:#14161B; --surface:#1D2026; --line:#2B2F38; --ink:#EDEFF2; --ink-soft:#98A0AC;
     --thai-tint:#3A2229; --math-tint:#3A2C1C; --sci-tint:#1B3327; --soc-tint:#2E271F;
     --pe-tint:#123035; --art-tint:#2E2035; --career-tint:#332C1A; --lang-tint:#1C2836;
+    --chip-bg:#262A33; --chip-bg-hover:#323742; --nav-bg:rgba(20,22,30,.92);
   }
   *{box-sizing:border-box;}
   input, select, textarea{ color:var(--ink); }
@@ -34,7 +36,7 @@
   h1,h2,h3,h4{ font-family:'Kanit',sans-serif; margin:0; }
   p{ margin:0; } a{ color:inherit; } button{ font-family:'Kanit',sans-serif; }
 
-  .navbar{ position:sticky; top:0; z-index:50; background:rgba(255,255,255,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
+  .navbar{ position:sticky; top:0; z-index:50; background:var(--nav-bg); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
   .nav-inner{ max-width:1320px; margin:0 auto; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
   .logo{ display:flex; align-items:center; gap:10px; cursor:pointer; }
   .logo-mark{ width:34px; height:34px; border-radius:9px; display:grid; grid-template-columns:repeat(4,1fr); gap:2px; padding:5px; background:var(--surface); border:1px solid var(--line); flex:none; }
@@ -43,11 +45,11 @@
   .logo-text small{ display:block; font-weight:400; font-size:.68rem; color:var(--ink-soft); }
   .nav-links{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
   .nav-links button{ all:unset; cursor:pointer; padding:9px 14px; border-radius:9px; font-size:.92rem; font-weight:500; color:var(--ink-soft); position:relative; }
-  .nav-links button:hover{ background:#F0F1F5; color:var(--ink); }
+  .nav-links button:hover{ background:var(--chip-bg); color:var(--ink); }
   .nav-links button.active{ background:var(--brand); color:#fff; font-weight:600; }
   .nav-badge{ position:absolute; top:2px; right:2px; background:var(--danger); color:#fff; font-size:.62rem; font-weight:700; min-width:16px; height:16px; border-radius:9px; display:flex; align-items:center; justify-content:center; padding:0 3px; }
   .auth-area{ display:flex; align-items:center; gap:10px; }
-  .signin-btn{ all:unset; cursor:pointer; display:flex; align-items:center; gap:8px; border:1px solid var(--line); background:#fff; padding:7px 14px 7px 7px; border-radius:20px; font-size:.85rem; font-weight:600; color:var(--ink); }
+  .signin-btn{ all:unset; cursor:pointer; display:flex; align-items:center; gap:8px; border:1px solid var(--line); background:var(--surface); padding:7px 14px 7px 7px; border-radius:20px; font-size:.85rem; font-weight:600; color:var(--ink); }
   .signin-btn:hover{ background:#F8F9FA; }
   .signin-btn .g-icon{ width:20px; height:20px; }
   .admin-pill{ display:none; align-items:center; gap:8px; background:#EAF6EE; border:1px solid #BEE6CB; color:#1F7A47; font-size:.8rem; font-weight:600; padding:6px 12px; border-radius:20px; }
@@ -163,12 +165,12 @@
   #feedbackList::-webkit-scrollbar{ width:6px; }
   #feedbackList::-webkit-scrollbar-thumb{ background:var(--line); border-radius:6px; }
   .fb-msg{ word-break:break-word; overflow-wrap:break-word; }
-  .fb-loadmore-btn{ all:unset; cursor:pointer; display:block; width:100%; text-align:center; background:#F0F1F5; color:var(--ink); font-weight:600; font-size:.85rem; padding:11px; border-radius:10px; margin-top:6px; }
-  .fb-loadmore-btn:hover{ background:#E7E9EC; }
+  .fb-loadmore-btn{ all:unset; cursor:pointer; display:block; width:100%; text-align:center; background:var(--chip-bg); color:var(--ink); font-weight:600; font-size:.85rem; padding:11px; border-radius:10px; margin-top:6px; }
+  .fb-loadmore-btn:hover{ background:var(--chip-bg-hover); }
   .card-foot{ display:flex; gap:8px; padding:0 16px 16px; }
   .btn{ all:unset; cursor:pointer; text-align:center; font-size:.85rem; font-weight:600; padding:9px 12px; border-radius:9px; flex:1; }
   .btn-primary{ background:var(--c,var(--brand)); color:#fff; } .btn-primary:hover{ filter:brightness(1.06); }
-  .btn-ghost{ background:#F0F1F5; color:var(--ink); } .btn-ghost:hover{ background:#E7E9EC; }
+  .btn-ghost{ background:var(--chip-bg); color:var(--ink); } .btn-ghost:hover{ background:var(--chip-bg-hover); }
 
   .library-layout{ display:grid; grid-template-columns:250px 1fr; gap:28px; padding-top:14px; }
   .filters{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px; align-self:start; position:sticky; top:84px; display:flex; flex-direction:column; gap:18px; }
@@ -176,8 +178,8 @@
   .filter-group label{ display:block; font-size:.78rem; color:var(--ink-soft); margin-bottom:6px; font-weight:500; }
   .filter-group select, .filter-group input{ width:100%; padding:9px 10px; border-radius:8px; border:1px solid var(--line); font-family:'Kanit'; font-size:.87rem; background:var(--bg); color:var(--ink); }
   .clear-btn{ all:unset; cursor:pointer; width:100%; text-align:center; font-size:.82rem; font-weight:600; color:var(--brand); padding:9px; border:1px dashed var(--brand); border-radius:8px; }
-  .admin-link{ all:unset; cursor:pointer; display:block; text-align:center; font-size:.78rem; font-weight:600; color:var(--ink-soft); padding:8px; border-radius:8px; background:#F0F1F5; }
-  .admin-link:hover{ background:#E7E9EC; }
+  .admin-link{ all:unset; cursor:pointer; display:block; text-align:center; font-size:.78rem; font-weight:600; color:var(--ink-soft); padding:8px; border-radius:8px; background:var(--chip-bg); }
+  .admin-link:hover{ background:var(--chip-bg-hover); }
 
   .library-results-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
   .library-results-head .count{ font-size:.9rem; color:var(--ink-soft); }
@@ -233,7 +235,7 @@
   .res-item{ display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
   .res-icon{ width:40px; height:40px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; } .res-icon svg{ width:20px; height:20px; }
   .res-info{ flex:1; min-width:0; } .res-info .name{ font-weight:600; font-size:.92rem; } .res-info .meta{ font-size:.76rem; color:var(--ink-soft); margin-top:2px; }
-  .res-download{ all:unset; cursor:pointer; font-size:.82rem; font-weight:600; padding:8px 14px; border-radius:8px; background:#F0F1F5; color:var(--ink); flex:none; }
+  .res-download{ all:unset; cursor:pointer; font-size:.82rem; font-weight:600; padding:8px 14px; border-radius:8px; background:var(--chip-bg); color:var(--ink); flex:none; }
   .res-del{ all:unset; cursor:pointer; width:30px; height:30px; border-radius:8px; display:none; align-items:center; justify-content:center; flex:none; }
   body.is-admin .res-del{ display:flex; }
   .res-del svg{ width:14px; height:14px; stroke:var(--ink-soft); fill:none; stroke-width:2.2; } .res-del:hover svg{ stroke:var(--danger); }
@@ -332,7 +334,7 @@
   .nav-drawer-head{ display:flex; justify-content:space-between; align-items:center; font-weight:700; font-size:1rem; margin-bottom:12px; padding-bottom:14px; border-bottom:1px solid var(--line); }
   .nav-drawer-head button{ all:unset; cursor:pointer; font-size:1.2rem; color:var(--ink-soft); line-height:1; padding:2px 6px; }
   .nav-drawer-link{ all:unset; cursor:pointer; padding:13px 14px; border-radius:9px; font-size:.92rem; font-weight:500; color:var(--ink); }
-  .nav-drawer-link:hover{ background:#F0F1F5; }
+  .nav-drawer-link:hover{ background:var(--chip-bg); }
   .nav-drawer-link.active{ background:var(--brand); color:#fff; font-weight:600; }
   #themeToggle.theme-switch-sky{ all:unset; display:inline-block; cursor:pointer; position:relative; width:64px; height:32px; border-radius:20px; flex:none; background:linear-gradient(135deg,#6EC6E8,#3E9DDB); box-shadow:inset 0 1px 3px rgba(0,0,0,.15); transition:background .4s ease; overflow:hidden; }
   body.dark-theme #themeToggle.theme-switch-sky{ background:linear-gradient(135deg,#1B1E3D,#2A2560); }
@@ -509,7 +511,7 @@
               <span class="chip" data-sort="name">ชื่อ ก-ฮ</span>
             </div>
             <button class="add-game-btn" id="openAddGameBtn" style="display:none;">+ เพิ่มเกมใหม่</button>
-            <button class="add-game-btn admin-only-flex" data-nav="submit" style="background:#F0F1F5;color:var(--ink);">แนะนำเกม (สาธารณะ)</button>
+            <button class="add-game-btn admin-only-flex" data-nav="submit" style="background:var(--chip-bg);color:var(--ink);">แนะนำเกม (สาธารณะ)</button>
           </div>
         </div>
         <div class="lib-grid" id="libGrid"><div class="loading-state">กำลังโหลดข้อมูล...</div></div>
@@ -714,7 +716,7 @@
 <!-- Add / Edit game modal (แอดมิน) -->
 <div class="modal-overlay" id="editOverlay">
   <div class="modal">
-    <button class="modal-close" id="editClose" style="color:var(--ink-soft); background:#F0F1F5;">✕</button>
+    <button class="modal-close" id="editClose" style="color:var(--ink-soft); background:var(--chip-bg);">✕</button>
     <div class="form-head"><h2 id="editModalTitle">เพิ่มเกมใหม่</h2></div>
     <form id="editForm" style="padding:20px 26px 26px;">
       <div class="field"><label>ชื่อเกม *</label><input type="text" id="edName" required></div>
@@ -755,7 +757,7 @@
 <!-- Edit resource modal -->
 <div class="modal-overlay" id="editResOverlay">
   <div class="modal">
-    <button class="modal-close" id="editResClose" style="color:var(--ink-soft); background:#F0F1F5;">✕</button>
+    <button class="modal-close" id="editResClose" style="color:var(--ink-soft); background:var(--chip-bg);">✕</button>
     <div class="form-head"><h2>แก้ไขไฟล์</h2></div>
     <form id="editResForm" style="padding:20px 26px 26px;">
       <div class="field"><label>ชื่อไฟล์ *</label><input type="text" id="edResName" required></div>
@@ -1615,8 +1617,8 @@ function renderCategoryManager(){
     <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;flex-wrap:wrap;">
       <input type="text" value="${c.name.replace(/"/g,'&quot;')}" data-id="${c.id}" class="catRenameInput" style="flex:1;min-width:140px;padding:6px 9px;border-radius:6px;border:1px solid var(--line);font-family:'Kanit';font-size:.83rem;">
       <button class="mini-action editlink" data-id="${c.id}" data-action="save">บันทึกชื่อ</button>
-      <button class="mini-action" style="background:#F0F1F5;color:var(--ink);" data-id="${c.id}" data-dir="-1" ${i===0?'disabled':''}>▲ ขึ้น</button>
-      <button class="mini-action" style="background:#F0F1F5;color:var(--ink);" data-id="${c.id}" data-dir="1" ${i===sorted.length-1?'disabled':''}>▼ ลง</button>
+      <button class="mini-action" style="background:var(--chip-bg);color:var(--ink);" data-id="${c.id}" data-dir="-1" ${i===0?'disabled':''}>▲ ขึ้น</button>
+      <button class="mini-action" style="background:var(--chip-bg);color:var(--ink);" data-id="${c.id}" data-dir="1" ${i===sorted.length-1?'disabled':''}>▼ ลง</button>
       <button class="mini-action remove" data-id="${c.id}" data-action="delete">ลบ</button>
     </div>`).join('');
   box.querySelectorAll('[data-action="save"]').forEach(btn => btn.addEventListener('click', () => {
