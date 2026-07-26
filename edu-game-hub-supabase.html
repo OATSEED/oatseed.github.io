@@ -22,6 +22,11 @@
     --lang:#3A6FB0;    --lang-tint:#E7EEF6;
     --brand:#3E5CE0; --brand-dark:#2C40A8; --danger:#D9455F; --radius:14px;
   }
+  body.dark-theme{
+    --bg:#14161B; --surface:#1D2026; --line:#2B2F38; --ink:#EDEFF2; --ink-soft:#98A0AC;
+    --thai-tint:#3A2229; --math-tint:#3A2C1C; --sci-tint:#1B3327; --soc-tint:#2E271F;
+    --pe-tint:#123035; --art-tint:#2E2035; --career-tint:#332C1A; --lang-tint:#1C2836;
+  }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth; overflow-y:scroll; scrollbar-gutter:stable;}
   body{ margin:0; background:var(--bg); color:var(--ink); font-family:'Kanit',sans-serif; -webkit-font-smoothing:antialiased; }
@@ -328,6 +333,20 @@
   .nav-drawer-link{ all:unset; cursor:pointer; padding:13px 14px; border-radius:9px; font-size:.92rem; font-weight:500; color:var(--ink); }
   .nav-drawer-link:hover{ background:#F0F1F5; }
   .nav-drawer-link.active{ background:var(--brand); color:#fff; font-weight:600; }
+  .theme-switch-sky{ all:unset; cursor:pointer; position:relative; width:64px; height:32px; border-radius:20px; flex:none; background:linear-gradient(135deg,#6EC6E8,#3E9DDB); box-shadow:inset 0 1px 3px rgba(0,0,0,.15); transition:background .4s ease; overflow:hidden; }
+  body.dark-theme .theme-switch-sky{ background:linear-gradient(135deg,#1B1E3D,#2A2560); }
+  .sky-thumb{ position:absolute; top:3px; left:35px; width:26px; height:26px; border-radius:50%; background:#FDFBF3; box-shadow:0 2px 6px rgba(0,0,0,.3); transition:left .4s ease, background .4s ease; }
+  body.dark-theme .sky-thumb{ left:3px; background:#E8E4D8; }
+  .sky-crater{ position:absolute; border-radius:50%; background:rgba(0,0,0,.1); opacity:0; transition:opacity .4s ease; }
+  body.dark-theme .sky-crater{ opacity:1; }
+  .sky-crater-1{ width:7px; height:7px; top:5px; left:14px; }
+  .sky-crater-2{ width:4px; height:4px; top:15px; left:6px; }
+  .sky-cloud{ position:absolute; background:#fff; border-radius:50%; opacity:.95; transition:opacity .35s ease; }
+  body.dark-theme .sky-cloud{ opacity:0; }
+  .sky-cloud-1{ width:11px; height:6px; top:8px; left:9px; box-shadow:5px 2px 0 -1px #fff, -3px 1px 0 -1px #fff; }
+  .sky-cloud-2{ width:8px; height:5px; top:19px; left:14px; box-shadow:4px 1px 0 -1px #fff; }
+  .sky-star{ position:absolute; width:2px; height:2px; background:#fff; border-radius:50%; opacity:0; box-shadow:0 0 3px #fff; transition:opacity .4s ease .1s; }
+  body.dark-theme .sky-star{ opacity:1; }
   .chart-tooltip{ position:fixed; z-index:200; background:var(--ink); color:#fff; font-size:.75rem; font-weight:600; padding:6px 11px; border-radius:7px; pointer-events:none; display:none; white-space:nowrap; box-shadow:0 6px 16px rgba(0,0,0,.2); }
 
   @media (max-width:900px){
@@ -341,6 +360,7 @@
 </style>
 </head>
 <body>
+<script>if(localStorage.getItem('theme')==='dark') document.body.classList.add('dark-theme');</script>
 
 <!-- ======================================================================
   ตั้งค่า 3 บรรทัดนี้ให้เป็นของคุณเอง (ดูวิธีทำใน SETUP_GUIDE_SUPABASE.txt)
@@ -368,8 +388,19 @@
       <button data-nav="resources">คลังสื่อ &amp; แผนการสอน</button>
       <button data-nav="submit">ส่ง/แนะนำเกม <span class="nav-badge admin-only" id="pendingBadge" style="display:none;">0</span></button>
       <button data-nav="about">เกี่ยวกับเรา</button>
-      <button id="adminMenuToggle" class="admin-only">☰ เมนูแอดมิน</button>
       <div class="auth-area">
+        <button id="themeToggle" class="theme-switch-sky" title="สลับโหมดมืด/สว่าง">
+          <span class="sky-cloud sky-cloud-1"></span>
+          <span class="sky-cloud sky-cloud-2"></span>
+          <span class="sky-star" style="top:6px;left:11px;"></span>
+          <span class="sky-star" style="top:17px;left:22px;"></span>
+          <span class="sky-star" style="top:9px;left:31px;"></span>
+          <span class="sky-thumb">
+            <span class="sky-crater sky-crater-1"></span>
+            <span class="sky-crater sky-crater-2"></span>
+          </span>
+        </button>
+        <button id="adminMenuToggle" class="admin-only">☰ เมนูแอดมิน</button>
         <button class="signin-btn" id="signInBtn">
           <svg class="g-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4C29.6 36.3 27 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 40.6 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.6 5.4C41.5 36 45 30.5 45 24c0-1.4-.1-2.7-1.4-3.5z"/></svg>
           เข้าสู่ระบบแอดมิน
@@ -387,9 +418,10 @@
 <div class="nav-drawer-overlay" id="navDrawerOverlay"></div>
 <div class="nav-drawer" id="navDrawer">
   <div class="nav-drawer-head"><span>เมนูแอดมิน</span><button id="navDrawerClose">✕</button></div>
-  <button class="nav-drawer-link" data-nav="settings">⚙️ ตั้งค่าเว็บไซต์</button>
   <button class="nav-drawer-link" data-nav="manage">🗂️ จัดการเกม</button>
   <button class="nav-drawer-link" data-nav="stats">📊 สถิติ</button>
+  <div style="border-top:1px solid var(--line); margin:10px 0;"></div>
+  <button class="nav-drawer-link" data-nav="settings">⚙️ ตั้งค่าเว็บไซต์</button>
 </div>
 
 <main>
@@ -1758,6 +1790,14 @@ document.getElementById('adminMenuToggle')?.addEventListener('click', openNavDra
 document.getElementById('navDrawerClose')?.addEventListener('click', closeNavDrawer);
 document.getElementById('navDrawerOverlay')?.addEventListener('click', closeNavDrawer);
 document.querySelectorAll('.nav-drawer-link').forEach(btn => btn.addEventListener('click', closeNavDrawer));
+function applyTheme(theme){
+  document.body.classList.toggle('dark-theme', theme === 'dark');
+  try{ localStorage.setItem('theme', theme); }catch(e){}
+}
+document.getElementById('themeToggle')?.addEventListener('click', () => {
+  applyTheme(document.body.classList.contains('dark-theme') ? 'light' : 'dark');
+});
+applyTheme(document.body.classList.contains('dark-theme') ? 'dark' : 'light');
 document.getElementById('heroSearchBtn').addEventListener('click', () => { navigate('library'); document.getElementById('fSearch').value = document.getElementById('heroSearch').value; applyFilters(); });
 document.getElementById('heroSearch').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('heroSearchBtn').click(); });
 
