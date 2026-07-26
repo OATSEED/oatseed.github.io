@@ -255,6 +255,18 @@
   .manage-btn.edit{ background:#EAEDFC; color:var(--brand); }
   .manage-btn.approve{ background:#DFF5E5; color:#1F9D4F; }
   .manage-btn.remove{ background:#FCE9EC; color:var(--danger); }
+
+  .stats-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:20px; }
+  .stats-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px; }
+  .stats-card h4{ font-size:.92rem; font-weight:700; margin-bottom:14px; }
+  .stats-list{ display:flex; flex-direction:column; gap:8px; }
+  .stats-row{ display:flex; align-items:center; gap:10px; font-size:.84rem; }
+  .stats-row .rank{ width:20px; flex:none; color:var(--ink-soft); font-weight:600; }
+  .stats-row .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .stats-row .count{ font-weight:700; color:var(--brand); flex:none; }
+  .stats-bar-track{ flex:1; height:6px; background:var(--bg); border-radius:4px; overflow:hidden; margin:0 4px; }
+  .stats-bar-fill{ height:100%; background:var(--brand); border-radius:4px; }
+  @media (max-width:800px){ .stats-grid{ grid-template-columns:1fr; } }
   .res-add-card{ background:var(--surface); border:1px dashed var(--line); border-radius:12px; padding:16px; margin-bottom:20px; }
   .res-add-card h4{ font-size:.88rem; font-weight:700; margin-bottom:12px; }
   .res-add-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1.4fr auto; gap:10px; align-items:end; }
@@ -346,6 +358,7 @@
       <button data-nav="about">เกี่ยวกับเรา</button>
       <button data-nav="settings" class="admin-only">ตั้งค่าเว็บไซต์</button>
       <button data-nav="manage" class="admin-only">จัดการเกม</button>
+      <button data-nav="stats" class="admin-only">สถิติ</button>
       <div class="auth-area">
         <button class="signin-btn" id="signInBtn">
           <svg class="g-icon" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.6 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4C29.6 36.3 27 37 24 37c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.6 40.6 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.6 5.4C41.5 36 45 30.5 45 24c0-1.4-.1-2.7-1.4-3.5z"/></svg>
@@ -563,6 +576,32 @@
         </tr></thead>
         <tbody id="manageTableBody"></tbody>
       </table>
+    </div>
+  </section>
+
+  <!-- ================= STATS (แอดมินเท่านั้น) ================= -->
+  <section class="page" id="page-stats">
+    <div class="about-hero" style="max-width:100%;">
+      <h1 style="font-size:1.7rem;">สถิติ</h1>
+      <p>ภาพรวมการใช้งานเว็บ ช่วยแอดมินตัดสินใจว่าควรเพิ่ม/ปรับปรุงเกมด้านไหนต่อ</p>
+    </div>
+    <div class="stats-grid">
+      <div class="stats-card">
+        <h4>🔥 เกมที่ถูกใจมากที่สุด</h4>
+        <div id="statsTopGames" class="stats-list"></div>
+      </div>
+      <div class="stats-card">
+        <h4>📚 กลุ่มสาระที่ถูกค้นหา/กรองบ่อยที่สุด</h4>
+        <div id="statsTopSubjects" class="stats-list"></div>
+      </div>
+      <div class="stats-card">
+        <h4>🔎 คำค้นหายอดนิยม</h4>
+        <div id="statsTopSearches" class="stats-list"></div>
+      </div>
+      <div class="stats-card">
+        <h4>🤖 คำถามยอดนิยมที่ถาม AI</h4>
+        <div id="statsTopChats" class="stats-list"></div>
+      </div>
     </div>
   </section>
 
@@ -813,6 +852,56 @@ async function logAndCountVisits(){
     const { count, error } = await sb.from('site_visits').select('*', { count:'exact', head:true });
     if(!error && document.getElementById('statVisits')) document.getElementById('statVisits').textContent = count;
   }catch(e){ console.warn('อ่านยอดเข้าชมไม่สำเร็จ', e); }
+}
+function logAnalyticsEvent(eventType, subject, query){
+  if(!configured() || !sb) return;
+  sb.from('analytics_events').insert({ event_type: eventType, subject, query }).then(() => {});
+}
+function statsBarList(entries, labelFn){
+  if(!entries.length) return `<div class="status-empty">ยังไม่มีข้อมูล</div>`;
+  const max = entries[0][1];
+  return entries.map(([key,count], i) => `
+    <div class="stats-row">
+      <span class="rank">${i+1}</span>
+      <span class="label">${escapeHtml(labelFn(key))}</span>
+      <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${max? Math.max(6,(count/max)*100):0}%"></div></div>
+      <span class="count">${count}</span>
+    </div>`).join('');
+}
+async function renderStatsPage(){
+  if(!document.getElementById('page-stats')) return;
+  if(!document.body.classList.contains('is-admin')) return;
+
+  const topGames = GAMES.filter(g => (g.likes||0) > 0).sort((a,b) => (b.likes||0)-(a.likes||0)).slice(0,10);
+  document.getElementById('statsTopGames').innerHTML = statsBarList(topGames.map(g => [g.name, g.likes||0]), k=>k);
+
+  if(!configured() || !sb){
+    ['statsTopSubjects','statsTopSearches','statsTopChats'].forEach(id => document.getElementById(id).innerHTML = `<div class="status-empty">ต้องเชื่อมต่อ Supabase ก่อนถึงจะเห็นข้อมูลนี้</div>`);
+    return;
+  }
+  try{
+    const { data, error } = await sb.from('analytics_events').select('*').order('created_at', { ascending:false }).limit(3000);
+    if(error) throw error;
+    const events = data || [];
+
+    const subjCounts = {};
+    events.filter(e => e.event_type==='search' && e.subject).forEach(e => { subjCounts[e.subject] = (subjCounts[e.subject]||0)+1; });
+    const subjSorted = Object.entries(subjCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    document.getElementById('statsTopSubjects').innerHTML = statsBarList(subjSorted, k => subjById(k).name);
+
+    const searchCounts = {};
+    events.filter(e => e.event_type==='search' && e.query).forEach(e => { const k = e.query.trim().toLowerCase(); if(k) searchCounts[k] = (searchCounts[k]||0)+1; });
+    const searchSorted = Object.entries(searchCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    document.getElementById('statsTopSearches').innerHTML = statsBarList(searchSorted, k=>k);
+
+    const chatCounts = {};
+    events.filter(e => e.event_type==='chat_question' && e.query).forEach(e => { const k = e.query.trim().toLowerCase(); if(k) chatCounts[k] = (chatCounts[k]||0)+1; });
+    const chatSorted = Object.entries(chatCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    document.getElementById('statsTopChats').innerHTML = statsBarList(chatSorted, k=>k);
+  }catch(e){
+    console.warn('โหลดสถิติไม่สำเร็จ', e);
+    ['statsTopSubjects','statsTopSearches','statsTopChats'].forEach(id => document.getElementById(id).innerHTML = `<div class="status-empty">โหลดข้อมูลไม่สำเร็จ</div>`);
+  }
 }
 async function manualRefresh(){ await loadAll(); refreshAll(); }
 
@@ -1247,7 +1336,16 @@ function initFilters(){
   ['submitSubject','submitLevel'].forEach(id => document.getElementById(id).addEventListener('change', () => refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel')));
   refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel');
   ['fSubject','fLevel','fPlatform'].forEach(id => document.getElementById(id).addEventListener('change', applyFilters));
-  document.getElementById('fSearch').addEventListener('input', applyFilters);
+  document.getElementById('fSubject').addEventListener('change', function(){ if(this.value) logAnalyticsEvent('search', this.value, null); });
+  let searchLogTimer = null;
+  document.getElementById('fSearch').addEventListener('input', () => {
+    applyFilters();
+    clearTimeout(searchLogTimer);
+    searchLogTimer = setTimeout(() => {
+      const q = document.getElementById('fSearch').value.trim();
+      if(q) logAnalyticsEvent('search', null, q);
+    }, 900);
+  });
   document.getElementById('clearFilters').addEventListener('click', () => {
     document.getElementById('fSubject').value=''; document.getElementById('fLevel').value='';
     document.getElementById('fPlatform').value=''; document.getElementById('fSearch').value=''; applyFilters();
@@ -1523,7 +1621,7 @@ document.getElementById('heroSearchBtn').addEventListener('click', () => { navig
 document.getElementById('heroSearch').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('heroSearchBtn').click(); });
 
 /* ============ INIT ============ */
-function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResourceTabs(); renderResources(); renderCategoryManager(); renderPendingQueue(); refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel'); applySettings(); renderSettingsForm(); renderManageTable(); renderFeedback(); }
+function refreshAll(){ renderSyncBanner(); renderHome(); applyFilters(); renderResourceTabs(); renderResources(); renderCategoryManager(); renderPendingQueue(); refreshIndicatorPicker('subCodePicker','submitSubject','submitLevel'); applySettings(); renderSettingsForm(); renderManageTable(); renderFeedback(); renderStatsPage(); }
 (async function init(){
   initFilters(); initEditFormOptions();
   if(configured()){
