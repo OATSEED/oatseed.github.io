@@ -267,7 +267,8 @@
   .stats-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:20px; }
   .stats-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px; }
   .stats-card h4{ font-size:.92rem; font-weight:700; margin-bottom:14px; }
-  .stats-list{ display:flex; flex-direction:column; gap:8px; }
+  .stats-list{ display:flex; flex-direction:column; gap:8px; transition:opacity .25s ease, transform .25s ease; }
+  #statsVisitsTrend, #statsHourly, #statsMonthlyCompare{ transition:opacity .25s ease, transform .25s ease; }
   .stats-row{ display:flex; align-items:center; gap:10px; font-size:.84rem; }
   .stats-row .rank{ width:20px; flex:none; color:var(--ink-soft); font-weight:600; }
   .stats-row .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -940,41 +941,47 @@ function hideChartTooltip(){ document.getElementById('chartTooltip').style.displ
 function renderLineChart(containerId, dataPoints){
   const el = document.getElementById(containerId);
   if(!el) return;
-  if(!dataPoints.length){ el.innerHTML = `<div class="status-empty">ยังไม่มีข้อมูล</div>`; return; }
-  const w = 560, h = 190, padL = 34, padR = 14, padT = 14, padB = 32;
-  const values = dataPoints.map(d => d.value);
-  const maxV = Math.max(...values, 1);
-  const stepX = dataPoints.length > 1 ? (w-padL-padR)/(dataPoints.length-1) : 0;
-  const points = dataPoints.map((d,i) => ({
-    x: padL + stepX*i,
-    y: padT + (h-padT-padB) * (1 - (d.value/maxV)),
-    ...d
-  }));
-  const pathD = points.map((p,i) => (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
-  const areaD = pathD + ` L${points[points.length-1].x.toFixed(1)},${h-padB} L${points[0].x.toFixed(1)},${h-padB} Z`;
-  const showEvery = Math.max(1, Math.ceil(dataPoints.length/8));
-  const labels = points.map((p,i) => {
-    if(i % showEvery !== 0 && i !== points.length-1) return '';
-    return `<text x="${p.x}" y="${h-10}" font-size="9" fill="var(--ink-soft)" text-anchor="middle">${escapeHtml(String(p.label).slice(0,10))}</text>`;
-  }).join('');
-  const dots = points.map(p => `<circle cx="${p.x}" cy="${p.y}" r="5" fill="var(--brand)" fill-opacity="0" data-label="${escapeHtml(String(p.label))}" data-value="${p.value}" style="cursor:pointer;"></circle><circle cx="${p.x}" cy="${p.y}" r="3.2" fill="var(--brand)" style="pointer-events:none;"></circle>`).join('');
-  const gridLines = [0,0.5,1].map(f => {
-    const y = padT + (h-padT-padB)*f;
-    const val = Math.round(maxV*(1-f));
-    return `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="2" y="${y+3}" font-size="9" fill="var(--ink-soft)">${val}</text>`;
-  }).join('');
-  el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block;">
-    ${gridLines}
-    <path d="${areaD}" fill="var(--brand)" opacity="0.09"></path>
-    <path d="${pathD}" fill="none" stroke="var(--brand)" stroke-width="2.2"></path>
-    ${dots}
-    ${labels}
-  </svg>`;
-  el.querySelectorAll('circle[data-label]').forEach(c => {
-    c.addEventListener('mousemove', e => showChartTooltip(e, c.dataset.label, c.dataset.value));
-    c.addEventListener('mouseleave', hideChartTooltip);
-    c.addEventListener('touchstart', e => showChartTooltip(e.touches[0], c.dataset.label, c.dataset.value));
-  });
+  const draw = () => {
+    if(!dataPoints.length){ el.innerHTML = `<div class="status-empty">ยังไม่มีข้อมูล</div>`; requestAnimationFrame(() => { el.style.opacity='1'; el.style.transform='translateY(0)'; }); return; }
+    const w = 560, h = 190, padL = 34, padR = 14, padT = 14, padB = 32;
+    const values = dataPoints.map(d => d.value);
+    const maxV = Math.max(...values, 1);
+    const stepX = dataPoints.length > 1 ? (w-padL-padR)/(dataPoints.length-1) : 0;
+    const points = dataPoints.map((d,i) => ({
+      x: padL + stepX*i,
+      y: padT + (h-padT-padB) * (1 - (d.value/maxV)),
+      ...d
+    }));
+    const pathD = points.map((p,i) => (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+    const areaD = pathD + ` L${points[points.length-1].x.toFixed(1)},${h-padB} L${points[0].x.toFixed(1)},${h-padB} Z`;
+    const showEvery = Math.max(1, Math.ceil(dataPoints.length/8));
+    const labels = points.map((p,i) => {
+      if(i % showEvery !== 0 && i !== points.length-1) return '';
+      return `<text x="${p.x}" y="${h-10}" font-size="9" fill="var(--ink-soft)" text-anchor="middle">${escapeHtml(String(p.label).slice(0,10))}</text>`;
+    }).join('');
+    const dots = points.map(p => `<circle cx="${p.x}" cy="${p.y}" r="5" fill="var(--brand)" fill-opacity="0" data-label="${escapeHtml(String(p.label))}" data-value="${p.value}" style="cursor:pointer;"></circle><circle cx="${p.x}" cy="${p.y}" r="3.2" fill="var(--brand)" style="pointer-events:none;"></circle>`).join('');
+    const gridLines = [0,0.5,1].map(f => {
+      const y = padT + (h-padT-padB)*f;
+      const val = Math.round(maxV*(1-f));
+      return `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="2" y="${y+3}" font-size="9" fill="var(--ink-soft)">${val}</text>`;
+    }).join('');
+    el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block;">
+      ${gridLines}
+      <path d="${areaD}" fill="var(--brand)" opacity="0.09"></path>
+      <path d="${pathD}" fill="none" stroke="var(--brand)" stroke-width="2.2"></path>
+      ${dots}
+      ${labels}
+    </svg>`;
+    el.querySelectorAll('circle[data-label]').forEach(c => {
+      c.addEventListener('mousemove', e => showChartTooltip(e, c.dataset.label, c.dataset.value));
+      c.addEventListener('mouseleave', hideChartTooltip);
+      c.addEventListener('touchstart', e => showChartTooltip(e.touches[0], c.dataset.label, c.dataset.value));
+    });
+    requestAnimationFrame(() => { el.style.opacity='1'; el.style.transform='translateY(0)'; });
+  };
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(6px)';
+  setTimeout(draw, 160);
 }
 let visitsRangeDays = 14;
 async function renderVisitAndHourlyStats(){
