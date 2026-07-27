@@ -291,7 +291,7 @@
   .pill{ font-size:.72rem; font-weight:600; padding:3px 10px; border-radius:20px; white-space:nowrap; }
   .pill-pending{ background:#FFF3D6; color:#9A6B00; } .pill-approved{ background:#DFF5E5; color:#1F9D4F; }
   .mini-action{ all:unset; cursor:pointer; font-size:.76rem; font-weight:600; padding:6px 10px; border-radius:7px; }
-  .mini-action.approve{ background:#DFF5E5; color:#1F9D4F; } .mini-action.remove{ background:#FCE9EC; color:var(--danger); }
+  .mini-action.approve{ background:#DFF5E5; color:#1F9D4F; } .mini-action.remove{ background:#FCE9EC; color:var(--danger); } .mini-action.editlink{ background:var(--chip-bg); color:var(--brand); }
 
   .about-hero{ padding:36px 0 10px; max-width:720px; } .about-hero h1{ font-size:2rem; font-weight:700; margin-bottom:14px; } .about-hero p{ color:var(--ink-soft); line-height:1.9; font-size:.95rem; }
   .about-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:30px 0; }
@@ -1615,7 +1615,7 @@ function renderCategoryManager(){
   box.innerHTML = `<div style="font-size:.8rem;font-weight:600;color:var(--ink-soft);margin:4px 0 8px;">จัดการหมวดหมู่ (แก้ชื่อ / ย้ายลำดับ / ลบ)</div>` +
     sorted.map((c,i) => `
     <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;flex-wrap:wrap;">
-      <input type="text" value="${c.name.replace(/"/g,'&quot;')}" data-id="${c.id}" class="catRenameInput" style="flex:1;min-width:140px;padding:6px 9px;border-radius:6px;border:1px solid var(--line);font-family:'Kanit';font-size:.83rem;">
+      <input type="text" value="${c.name.replace(/"/g,'&quot;')}" data-id="${c.id}" class="catRenameInput" style="flex:1;min-width:140px;padding:6px 9px;border-radius:6px;border:1px solid var(--line);font-family:'Kanit';font-size:.83rem;background:var(--bg);color:var(--ink);">
       <button class="mini-action editlink" data-id="${c.id}" data-action="save">บันทึกชื่อ</button>
       <button class="mini-action" style="background:var(--chip-bg);color:var(--ink);" data-id="${c.id}" data-dir="-1" ${i===0?'disabled':''}>▲ ขึ้น</button>
       <button class="mini-action" style="background:var(--chip-bg);color:var(--ink);" data-id="${c.id}" data-dir="1" ${i===sorted.length-1?'disabled':''}>▼ ลง</button>
