@@ -128,6 +128,8 @@
   .platform-tile .name{ font-weight:700; font-size:.95rem; }
   .platform-tile .desc{ font-size:.78rem; color:var(--ink-soft); line-height:1.6; }
   @media (max-width:900px){ .platform-grid{ grid-template-columns:repeat(2,1fr); } }
+  .platform-admin-actions{ display:none; }
+  body.is-admin .platform-admin-actions{ display:flex; }
 
   .card{ position:relative; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; display:flex; flex-direction:column; transition:transform .15s ease, box-shadow .15s ease; cursor:pointer; }
   .card:hover{ transform:translateY(-4px); box-shadow:0 16px 30px -20px rgba(31,36,48,.35); }
@@ -787,6 +789,25 @@
   </div>
 </div>
 
+<!-- Add / Edit platform modal -->
+<div class="modal-overlay" id="platformOverlay">
+  <div class="modal">
+    <button class="modal-close" id="platformClose" style="color:var(--ink-soft); background:var(--chip-bg);">✕</button>
+    <div class="form-head"><h2 id="platformModalTitle">เพิ่มแพลตฟอร์ม</h2></div>
+    <form id="platformForm" style="padding:20px 26px 26px;">
+      <div class="field"><label>ชื่อแพลตฟอร์ม *</label><input type="text" id="pfName" required></div>
+      <div class="field"><label>ลิงก์เว็บไซต์ *</label><input type="url" id="pfUrl" placeholder="https://" required></div>
+      <div class="field"><label>ลิงก์โลโก้ (ไม่บังคับ)</label><input type="url" id="pfLogo" placeholder="https://..."><div class="hint">ใส่ลิงก์รูปโลโก้ตรงๆ (เช่นอัปโหลดไป Imgur แล้ววางลิงก์) ถ้าไม่ใส่ จะแสดงตัวอักษรแรกของชื่อในวงกลมสีแทน</div></div>
+      <div class="field"><label>คำอธิบายสั้นๆ</label><textarea rows="2" id="pfDesc"></textarea></div>
+      <div class="field"><label>สีวงกลม (กรณีไม่มีโลโก้)</label><input type="color" id="pfColor" value="#3E5CE0" style="height:42px;padding:4px;"></div>
+      <div class="form-actions">
+        <button type="button" class="delete-link" id="platformDeleteBtn" style="display:none;">ลบแพลตฟอร์มนี้</button>
+        <button type="submit" class="submit-btn">บันทึก</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 /* ============ CONFIG ============ */
 const SUBJECTS = [
@@ -855,6 +876,7 @@ let GAMES = [];
 let RESOURCES = [];
 let CATEGORIES = [];
 let FEEDBACK = [];
+let PLATFORMS_DB = [];
 let INDICATORS = [];
 let SETTINGS = {};
 const SETTINGS_FIELDS = [
@@ -879,13 +901,14 @@ function dbToResource(r){ return { id:r.id, name:r.name, category:r.category, su
 async function loadAll(){
   if(!configured()){ GAMES = SEED_GAMES; RESOURCES = SEED_RESOURCES; INDICATORS = []; usingLiveData = false; return; }
   try{
-    const [gRes, rRes, iRes, sRes, cRes, fRes] = await Promise.all([
+    const [gRes, rRes, iRes, sRes, cRes, fRes, pRes] = await Promise.all([
       sb.from('games').select('*').order('created_at', { ascending:false }),
       sb.from('resources').select('*').order('created_at', { ascending:false }),
       sb.from('indicators').select('*').order('code', { ascending:true }),
       sb.from('site_settings').select('*'),
       sb.from('resource_categories').select('*').order('sort_order', { ascending:true }),
-      sb.from('feedback').select('*').order('created_at', { ascending:true })
+      sb.from('feedback').select('*').order('created_at', { ascending:true }),
+      sb.from('platforms').select('*').order('sort_order', { ascending:true })
     ]);
     if(gRes.error) throw gRes.error;
     if(rRes.error) throw rRes.error;
@@ -894,6 +917,7 @@ async function loadAll(){
     INDICATORS = iRes.error ? [] : iRes.data;
     CATEGORIES = cRes.error ? [] : cRes.data;
     FEEDBACK = fRes.error ? [] : fRes.data;
+    PLATFORMS_DB = pRes.error ? [] : pRes.data;
     if(!sRes.error){ SETTINGS = {}; sRes.data.forEach(r => SETTINGS[r.key] = r.value); }
     usingLiveData = true;
   }catch(e){
@@ -1358,21 +1382,95 @@ document.getElementById('manageAddBtn')?.addEventListener('click', openAddGame);
 
 /* ============ HOME / LIBRARY RENDER ============ */
 function visibleGames(){ return GAMES.filter(g => g.status === 'อนุมัติ' || document.body.classList.contains('is-admin')); }
-const PLATFORMS_INFO = [
-  { name:'Wordwall', url:'https://wordwall.net', color:'#3FA66C', desc:'สร้างเกมและกิจกรรมเชิงโต้ตอบง่ายๆ เช่น จับคู่ วงล้อสุ่ม ปริศนาอักษรไขว้' },
-  { name:'Kahoot!', url:'https://kahoot.com', color:'#7B4FE0', desc:'เกมตอบคำถามแบบแข่งขันสด เล่นพร้อมกันทั้งห้องผ่านมือถือได้ทันที' },
-  { name:'Quizizz', url:'https://quizizz.com', color:'#E0526B', desc:'แบบทดสอบเชิงเกม เล่นสดในห้องเรียนหรือมอบหมายเป็นการบ้านก็ได้' },
-  { name:'Blooket', url:'https://www.blooket.com', color:'#2F80ED', desc:'เกมตอบคำถามผสมกลไกสะสมการ์ด เพิ่มความสนุกให้การทบทวนบทเรียน' }
-];
 function renderPlatformGrid(){
   const box = document.getElementById('platformGrid');
   if(!box) return;
-  box.innerHTML = PLATFORMS_INFO.map(p => `
-    <a class="platform-tile" href="${p.url}" target="_blank" rel="noopener noreferrer">
-      <div class="icon" style="background:${p.color}">${escapeHtml(p.name.charAt(0))}</div>
-      <div class="name">${escapeHtml(p.name)}</div>
-      <div class="desc">${escapeHtml(p.desc)}</div>
-    </a>`).join('');
+  const list = PLATFORMS_DB.slice().sort((a,b) => (a.sort_order||0)-(b.sort_order||0));
+  box.innerHTML = list.map(p => {
+    const logo = p.logo_url && p.logo_url.trim()
+      ? `<img src="${p.logo_url}" alt="${escapeHtml(p.name)}" style="width:38px;height:38px;border-radius:10px;object-fit:contain;background:#fff;" onerror="this.outerHTML='<div class=&quot;icon&quot; style=&quot;background:${p.color||'#3E5CE0'}&quot;>${escapeHtml(p.name.charAt(0))}</div>'">`
+      : `<div class="icon" style="background:${p.color||'#3E5CE0'}">${escapeHtml(p.name.charAt(0))}</div>`;
+    return `
+    <div class="platform-tile" style="position:relative;">
+      <div class="platform-admin-actions admin-only" style="position:absolute;top:10px;right:10px;gap:6px;">
+        <button class="icon-btn edit" title="แก้ไข" onclick="event.preventDefault(); openEditPlatform('${p.id}')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+        <button class="icon-btn danger" title="ลบ" onclick="event.preventDefault(); deletePlatform('${p.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg></button>
+      </div>
+      <a href="${p.url}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:10px;">
+        ${logo}
+        <div class="name">${escapeHtml(p.name)}</div>
+        <div class="desc">${escapeHtml(p.description||'')}</div>
+      </a>
+    </div>`;
+  }).join('') + `<button class="platform-tile admin-only" style="align-items:center;justify-content:center;cursor:pointer;border:1px dashed var(--line);background:none;" onclick="openAddPlatform()">
+      <div style="font-size:1.5rem;color:var(--ink-soft);">+</div>
+      <div class="name" style="color:var(--ink-soft);">เพิ่มแพลตฟอร์ม</div>
+    </button>`;
+}
+let editingPlatformId = null;
+function openAddPlatform(){
+  editingPlatformId = null;
+  document.getElementById('platformModalTitle').textContent = 'เพิ่มแพลตฟอร์ม';
+  document.getElementById('platformForm').reset();
+  document.getElementById('platformDeleteBtn').style.display = 'none';
+  document.getElementById('platformOverlay').classList.add('active');
+}
+function openEditPlatform(id){
+  const p = PLATFORMS_DB.find(x => x.id === id); if(!p) return;
+  editingPlatformId = id;
+  document.getElementById('platformModalTitle').textContent = 'แก้ไขแพลตฟอร์ม';
+  document.getElementById('pfName').value = p.name || '';
+  document.getElementById('pfUrl').value = p.url || '';
+  document.getElementById('pfLogo').value = p.logo_url || '';
+  document.getElementById('pfDesc').value = p.description || '';
+  document.getElementById('pfColor').value = p.color || '#3E5CE0';
+  document.getElementById('platformDeleteBtn').style.display = 'inline-flex';
+  document.getElementById('platformOverlay').classList.add('active');
+}
+function closePlatformModal(){ document.getElementById('platformOverlay').classList.remove('active'); }
+document.getElementById('platformClose')?.addEventListener('click', closePlatformModal);
+document.getElementById('platformOverlay')?.addEventListener('click', e => { if(e.target.id === 'platformOverlay') closePlatformModal(); });
+document.getElementById('platformForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const payload = {
+    name: document.getElementById('pfName').value.trim(),
+    url: document.getElementById('pfUrl').value.trim(),
+    logo_url: document.getElementById('pfLogo').value.trim(),
+    description: document.getElementById('pfDesc').value.trim(),
+    color: document.getElementById('pfColor').value || '#3E5CE0'
+  };
+  if(!payload.name || !payload.url){ alert('กรุณากรอกชื่อและลิงก์แพลตฟอร์ม'); return; }
+  if(editingPlatformId){
+    const { error } = await sb.from('platforms').update(payload).eq('id', editingPlatformId);
+    if(error){ alert('บันทึกไม่สำเร็จ: '+error.message); return; }
+  } else {
+    payload.sort_order = PLATFORMS_DB.length;
+    const { error } = await sb.from('platforms').insert(payload);
+    if(error){ alert('เพิ่มไม่สำเร็จ: '+error.message); return; }
+  }
+  closePlatformModal();
+  await loadAll();
+  renderPlatformGrid();
+});
+document.getElementById('platformDeleteBtn')?.addEventListener('click', async () => {
+  if(!editingPlatformId) return;
+  const p = PLATFORMS_DB.find(x => x.id === editingPlatformId);
+  if(confirm(`ลบแพลตฟอร์ม "${p?.name}"?`)){
+    const { error } = await sb.from('platforms').delete().eq('id', editingPlatformId);
+    if(error){ alert('ลบไม่สำเร็จ: '+error.message); return; }
+    closePlatformModal();
+    await loadAll();
+    renderPlatformGrid();
+  }
+});
+async function deletePlatform(id){
+  const p = PLATFORMS_DB.find(x => x.id === id); if(!p) return;
+  if(confirm(`ลบแพลตฟอร์ม "${p.name}"?`)){
+    const { error } = await sb.from('platforms').delete().eq('id', id);
+    if(error){ alert('ลบไม่สำเร็จ: '+error.message); return; }
+    await loadAll();
+    renderPlatformGrid();
+  }
 }
 function renderHome(){
   renderCarousel();
