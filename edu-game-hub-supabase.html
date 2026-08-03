@@ -1878,7 +1878,7 @@ document.getElementById('submitForm').addEventListener('submit', async e => {
   const { error } = await sb.from('games').insert(payload);
   if(!error){
     toast.className='toast show'; toast.textContent='✅ ส่งสำเร็จ! รอแอดมินตรวจสอบก่อนเผยแพร่'; e.target.reset(); await manualRefresh();
-    sb.functions.invoke('notify-admin', { body: payload }).catch(() => {});
+    sb.functions.invoke('notify-admin', { body: { ...payload, subject: subjById(payload.subject).name, submittedBy: payload.submitted_by } }).catch(() => {});
   }
   else{ toast.className='toast show error'; toast.textContent='เกิดข้อผิดพลาด: '+error.message; }
   btn.disabled=false; btn.textContent='ส่งข้อมูล';
