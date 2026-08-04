@@ -31,6 +31,10 @@
   }
   *{box-sizing:border-box;}
   input, select, textarea{ color:var(--ink); }
+  .site-announcement{ background:#FFF3D6; color:#8A6300; padding:11px 44px; text-align:center; font-size:.85rem; font-weight:600; position:relative; display:flex; align-items:center; justify-content:center; gap:14px; line-height:1.6; }
+  .site-announcement #announcementClose{ all:unset; cursor:pointer; font-size:.95rem; color:#8A6300; position:absolute; right:16px; top:50%; transform:translateY(-50%); padding:4px; }
+  body.dark-theme .site-announcement{ background:#3A2F14; color:#E8C468; }
+  body.dark-theme .site-announcement #announcementClose{ color:#E8C468; }
   html{scroll-behavior:smooth; overflow-y:scroll; scrollbar-gutter:stable;}
   body{ margin:0; background:var(--bg); color:var(--ink); font-family:'Kanit',sans-serif; -webkit-font-smoothing:antialiased; }
   h1,h2,h3,h4{ font-family:'Kanit',sans-serif; margin:0; }
@@ -376,6 +380,11 @@
 </head>
 <body>
 <script>if(localStorage.getItem('theme')==='dark') document.body.classList.add('dark-theme');</script>
+
+<div class="site-announcement" id="siteAnnouncement" style="display:none;">
+  <span id="announcementText"></span>
+  <button id="announcementClose" title="ปิด">✕</button>
+</div>
 
 <!-- ======================================================================
   ตั้งค่า 3 บรรทัดนี้ให้เป็นของคุณเอง (ดูวิธีทำใน SETUP_GUIDE_SUPABASE.txt)
@@ -882,6 +891,8 @@ let PLATFORMS_DB = [];
 let INDICATORS = [];
 let SETTINGS = {};
 const SETTINGS_FIELDS = [
+  { key:'announcement_enabled', label:'เปิดแสดงแถบประกาศบนหน้าเว็บ', type:'checkbox' },
+  { key:'announcement_text', label:'ข้อความประกาศ (เช่น ปิดปรับปรุงระบบ, กิจกรรมพิเศษ)', type:'textarea' },
   { key:'hero_lede', label:'ข้อความคำโปรยหน้าแรก (ใต้หัวข้อใหญ่)', type:'textarea' },
   { key:'about_text', label:'ข้อความหน้า "เกี่ยวกับเรา"', type:'textarea' },
   { key:'contact_email', label:'อีเมลติดต่อ', type:'text' },
@@ -935,10 +946,33 @@ function applySettings(){
       if(el) el.textContent = SETTINGS[key];
     }
   });
+  applyAnnouncement();
 }
+function applyAnnouncement(){
+  const banner = document.getElementById('siteAnnouncement');
+  if(!banner) return;
+  const enabled = SETTINGS.announcement_enabled === 'true';
+  const text = (SETTINGS.announcement_text || '').trim();
+  let dismissed = '';
+  try{ dismissed = sessionStorage.getItem('announcementDismissed') || ''; }catch(e){}
+  if(enabled && text && dismissed !== text){
+    document.getElementById('announcementText').textContent = text;
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+document.getElementById('announcementClose')?.addEventListener('click', () => {
+  try{ sessionStorage.setItem('announcementDismissed', (SETTINGS.announcement_text||'').trim()); }catch(e){}
+  document.getElementById('siteAnnouncement').style.display = 'none';
+});
 function renderSettingsForm(){
   const box = document.getElementById('settingsFormBox');
   box.innerHTML = SETTINGS_FIELDS.map(f => {
+    if(f.type === 'checkbox'){
+      const checked = SETTINGS[f.key] === 'true' ? 'checked' : '';
+      return `<div class="field"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;"><input type="checkbox" data-key="${f.key}" data-type="checkbox" ${checked} style="width:auto;"> ${f.label}</label></div>`;
+    }
     const val = (SETTINGS[f.key] || '').replace(/"/g,'&quot;');
     return `<div class="field"><label>${f.label}</label>${f.type==='textarea' ? `<textarea rows="3" data-key="${f.key}">${SETTINGS[f.key]||''}</textarea>` : `<input type="text" data-key="${f.key}" value="${val}">`}</div>`;
   }).join('') + `<button type="button" class="submit-btn" id="saveSettingsBtn">บันทึกการตั้งค่า</button><div class="toast" id="settingsToast"></div>`;
@@ -948,9 +982,10 @@ async function saveSettings(){
   const toast = document.getElementById('settingsToast');
   const inputs = document.querySelectorAll('#settingsFormBox [data-key]');
   for(const el of inputs){
-    const { error } = await sb.from('site_settings').upsert({ key: el.dataset.key, value: el.value });
+    const value = el.dataset.type === 'checkbox' ? (el.checked ? 'true' : 'false') : el.value;
+    const { error } = await sb.from('site_settings').upsert({ key: el.dataset.key, value });
     if(error){ toast.className='toast show error'; toast.textContent='บันทึกไม่สำเร็จ: '+error.message; return; }
-    SETTINGS[el.dataset.key] = el.value;
+    SETTINGS[el.dataset.key] = value;
   }
   applySettings();
   toast.className='toast show'; toast.textContent='✅ บันทึกสำเร็จ เว็บอัปเดตข้อความให้แล้ว';
